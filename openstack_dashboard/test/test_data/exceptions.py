@@ -14,6 +14,7 @@
 
 from cinderclient import exceptions as cinder_exceptions
 import glanceclient.exc as glance_exceptions
+import ceilometerclient.exc as ceilometer_exceptions
 from keystoneclient import exceptions as keystone_exceptions
 from novaclient import exceptions as nova_exceptions
 from quantumclient.common import exceptions as quantum_exceptions
@@ -59,6 +60,9 @@ def data(TEST):
 
     glance_exception = glance_exceptions.ClientException
     TEST.exceptions.glance = create_stubbed_exception(glance_exception)
+
+    ceilometer_exception = ceilometer_exceptions.ClientException
+    TEST.exceptions.ceilometer = create_stubbed_exception(ceilometer_exception)
 
     quantum_exception = quantum_exceptions.QuantumClientException
     TEST.exceptions.quantum = create_stubbed_exception(quantum_exception)
