@@ -22,8 +22,9 @@ import horizon
 class SystemPanels(horizon.PanelGroup):
     slug = "admin"
     name = _("System Panel")
-    panels = ('overview', 'hypervisors', 'instances', 'volumes', 'flavors',
-              'images', 'networks', 'routers', 'info')
+    panels = ('overview', 'metering', 'hypervisors', 'instances',
+              'volumes', 'flavors', 'images', 'networks',
+              'routers', 'info')
 
 
 class IdentityPanels(horizon.PanelGroup):

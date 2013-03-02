@@ -1,0 +1,81 @@
+{% load i18n %}
+{% load url from future %}
+{% spaceless %}
+  <script type="text/javascript">
+    (function(){
+      var init_ceilometer = function(){
+        var meters = [];
+        {% for m in meters %}
+          meters.push({
+            "name":  "{{ m.name }}",
+            "resource_id": "{{ m.resource_id }}",
+            "user_id": "{{ m.user_id }}",
+            "project_id": "{{ m.project_id }}",
+            "unit": "{{ m.unit }}",
+            "type": "{{ m.type }}"
+          });
+        {% endfor %}
+        horizon.ceilometer.getResources(meters);
+        horizon.ceilometer.updateResourceOptions();
+        horizon.ceilometer.loadChartData();
+      };
+      if (typeof horizon.ceilometer !== "undefined"){
+        init_ceilometer();
+      } else {
+        addHorizonLoadEvent(init_ceilometer);
+      }
+    }());
+  </script>
+{% endspaceless %}
+<div id="samples_url" url="{% url "horizon:admin:metering:samples" %}"></div>
+<div id="ceilometer-stats">
+  <form class="form-horizontal">
+    <div class="control-group">
+      <label for="meter" class="control-label">{% trans "Metric" %}:&nbsp;</label>
+      <div class="controls">
+        <select name="meter" id="meter" class="span2 example">
+          {% for meter in meters %}
+          <option value="{{ meter.name }}" data-unit="{{ meter.unit }}">
+          {{ meter.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="control-group">
+      <label for="resource" class="control-label">{% trans "Resource" %}:&nbsp;</label>
+      <div class="controls">
+        <select name="resource" id="resource" class="span4 example">
+          <option value="">{% trans "Select a meter to load options." %}</option>
+        </select>
+      </div>
+    </div>
+    <div class="control-group">
+      <label for="date_options" class="control-label">{% trans "Period" %}:&nbsp;</label>
+      <div class="controls">
+        <select id="date_options" name="date_options" class="span2">
+          <option value="1" selected>{% trans "Last day" %}</option>
+          <option value="7">{% trans "Last week" %}</option>
+          <option value="15">{% trans "Last 15 days" %}</option>
+          <option value="30">{% trans "Last 30 days" %}</option>
+          <option value="365">{% trans "Last year" %}</option>
+        </select>
+      </div>
+    </div>
+    <div class="control-group">
+      <label for="date_from" class="control-label">{% trans "From" %}:&nbsp;</label>
+      <div class="controls">
+        <input type="text" id="date_from" name="date_from" class="span2 example"/>
+      </div>
+    </div>
+    <div class="control-group">
+      <label for="date_to" class="control-label">{% trans "To" %}:&nbsp;</label>
+      <div class="controls">
+        <input type="text" id="date_to" name="date_to" class="span2 example"/>
+      </div>
+    </div>
+    <button type="button" id="action_display_chart"
+      class="btn btn-small btn-search action_display_chart">{% trans "Refresh" %}</button>
+  </form>
+</div>
+<div id="chart_container"></div>
