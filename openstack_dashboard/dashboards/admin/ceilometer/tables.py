@@ -66,3 +66,46 @@ class  DiskIOTable(tables.DataTable):
         verbose_name = _("Disk I/O")
         table_actions = (DiskIOFilterAction,)
         multi_select = False
+
+
+class NetworkIOFilterAction(tables.FilterAction):
+    def filter(self, table, tenants, filter_string):
+        q = filter_string.lower()
+
+        def comp(tenant):
+            if q in tenant.name.lower():
+                return True
+            return False
+
+        return filter(comp, tenants)
+
+
+def get_incoming_bytes(sample):
+    return filesizeformat(sample.network_incoming_bytes, float_format)
+
+
+def get_outgoing_bytes(sample):
+    return filesizeformat(sample.network_outgoing_bytes, float_format)
+
+
+class  NetworkIOTable(tables.DataTable):
+    tenant = tables.Column("tenant", verbose_name=_("Tenant"))
+    user = tables.Column("user", verbose_name=_("User"))
+    instance = tables.Column("instance", verbose_name=_("Instance"))
+    network_incoming_bytes = tables.Column(get_incoming_bytes,
+                            verbose_name=_("Network incoming Bytes"))
+    network_incoming_packets = tables.Column("network_incoming_packets",
+                            verbose_name=_("Network incoming Packets"))
+    network_outgoing_bytes = tables.Column(get_outgoing_bytes,
+                            verbose_name=_("Network Outgoing Bytes"))
+    network_outgoing_packets = tables.Column("network_outgoing_packets",
+                            verbose_name=_("Network Outgoing Packets"))
+
+    def get_object_id(self, datum):
+        return datum.resource_id
+
+    class Meta:
+        name = "networkio"
+        verbose_name = _("Network I/O")
+        table_actions = (NetworkIOFilterAction,)
+        multi_select = False

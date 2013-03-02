@@ -36,9 +36,11 @@ class Sample(APIResourceWrapper):
 
     @property
     def instance(self):
-        try:
+        if 'display_name' in self.resource_metadata:
             return self.resource_metadata['display_name']
-        except:
+        elif 'instance_id' in self.resource_metadata:
+            return self.resource_metadata['instance_id']
+        else:
             return None
 
 
@@ -111,6 +113,30 @@ def disk_io(request):
 
     usage = merge_samples(read_bytes + write_bytes +
                              read_requests + write_requests)
+    keystone_tenant_list = keystone.tenant_list(request)
+    keystone_user_list = keystone.user_list(request)
+    for u in usage:
+        for t in keystone_tenant_list:
+            if t.id == u.project_id:
+                u.tenant = t.name
+        for ks_user in keystone_user_list:
+            if ks_user.id == u.user_id:
+                u.user = ks_user.name
+    return usage
+
+
+def network_io(request):
+    incoming_bytes = get_total_volume(sample_list(request,
+                                                  "network.incoming.bytes"))
+    outgoing_bytes = get_total_volume(sample_list(request,
+                                                  "network.outgoing.bytes"))
+    incoming_packets = get_total_volume(sample_list(request,
+                                                  "network.incoming.packets"))
+    outgoing_packets = get_total_volume(sample_list(request,
+                                                  "network.outgoing.packets"))
+
+    usage = merge_samples(incoming_bytes + incoming_packets +
+                          outgoing_bytes + outgoing_packets)
     keystone_tenant_list = keystone.tenant_list(request)
     keystone_user_list = keystone.user_list(request)
     for u in usage:

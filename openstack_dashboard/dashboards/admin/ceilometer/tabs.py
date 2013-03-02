@@ -20,7 +20,7 @@ from horizon import tabs
 
 from openstack_dashboard import api
 
-from .tables import DiskIOTable
+from .tables import DiskIOTable, NetworkIOTable
 
 
 class DiskIOTab(tabs.TableTab):
@@ -35,7 +35,19 @@ class DiskIOTab(tabs.TableTab):
         return result
 
 
+class NetworkIOTab(tabs.TableTab):
+    table_classes = (NetworkIOTable,)
+    name = _("Network I/O")
+    slug = "networkio"
+    template_name = ("horizon/common/_detail_table.html")
+
+    def get_networkio_data(self):
+        request = self.tab_group.request
+        result = api.ceilometer.network_io(request)
+        return result
+
+
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
-    tabs = (DiskIOTab,)
+    tabs = (DiskIOTab, NetworkIOTab,)
     sticky = True
