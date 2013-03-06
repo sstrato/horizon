@@ -22,11 +22,20 @@ from ceilometerclient import client as ceilometer_client
 
 from horizon import exceptions
 
-from .base import APIResourceWrapper, url_for
+from .base import APIResourceWrapper, APIDictWrapper, url_for
 
 import keystone
 
 LOG = logging.getLogger(__name__)
+
+
+class Meter(APIResourceWrapper):
+    _attrs = ['name', 'type', 'unit', 'resource_id', 'user_id',
+              'project_id']
+
+
+class Resource(APIResourceWrapper):
+    _attrs = ['resource_id', "source", "user_id", "project_id"]
 
 
 class Sample(APIResourceWrapper):
@@ -44,141 +53,131 @@ class Sample(APIResourceWrapper):
             return None
 
 
+class GlobalDiskUsage(APIDictWrapper):
+    _attrs = ["tenant", "user", "resource", "disk_read_bytes",
+              "disk_read_requests", "disk_write_bytes",
+              "disk_write_requests"]
+
+
+class GlobalNetworkUsage(APIResourceWrapper):
+    _attrs = ["tenant", "user", "resource", "network_incoming_bytes",
+              "network_incoming_packets", "network_outgoing_bytes",
+              "network_outgoing_packets"]
+
+
+class Statistic(APIResourceWrapper):
+    _attrs = ['period', 'period_start', 'period_end',
+              'count', 'min', 'max', 'sum', 'avg',
+              'duration', 'duration_start', 'duration_end']
+
+
 def ceilometerclient(request):
     o = urlparse.urlparse(url_for(request, 'metering'))
     url = "://".join((o.scheme, o.netloc))
     insecure = getattr(settings, 'OPENSTACK_SSL_NO_VERIFY', False)
     LOG.debug('ceilometerclient connection created using token "%s" '
               'and url "%s"' % (request.user.token.id, url))
-    return ceilometer_client.Client('1', url, token=request.user.token.id,
+    return ceilometer_client.Client('2', url, token=request.user.token.id,
                              insecure=insecure)
 
 
-def sample_list(request, counter_name, resource_id=None, user_id=None,
-                tenant_id=None, start_timestamp=None, end_timestamp=None,
-                metaquery='', source="openstack"):
+def sample_list(request, meter_name, query=[]):
     """List the samples for this meters."""
     try:
         samples = ceilometerclient(request).\
-            samples.list(counter_name=counter_name,
-                         resource_id=resource_id,
-                         user_id=user_id,
-                         tenant_id=tenant_id,
-                         start_timestamp=start_timestamp,
-                         end_timestamp=end_timestamp,
-                         metaquery=metaquery,
-                         source=source)
+            samples.list(meter_name=meter_name,
+                         q=query)
     except:
         samples = []
-        LOG.exception("Ceilometer sapmles not found: %s" % counter_name)
+        LOG.exception("Sample list from Ceilometer not found: %s" % meter_name)
         exceptions.handle(request)
 
     return [Sample(s) for s in samples]
 
 
-def meter_list(request, resource_id, user_id, tenant_id, source):
+def meter_list(request, query=[]):
     """List the user's meters."""
-    meters = ceilometerclient(request).meters.list(resource_id=resource_id,
-                                                   user_id=user_id,
-                                                   tenant_id=tenant_id,
-                                                   source=source)
+    meters = ceilometerclient(request).meters.list(q=query)
     return meters
 
 
-def user_list(request):
-    """List the users."""
-    users = ceilometerclient(request).users.list()
-    return users
-
-
-def resource_list(request, source, user_id):
+def resource_list(request, query=[]):
     """List the resources."""
     resources = ceilometerclient(request).\
-        resources.list(source=source, user_id=user_id)
+        resources.list(query)
     return resources
 
 
-def tenant_list(request, source):
-    tenants = ceilometerclient(request).tenants.list(source=source)
-    return tenants
+def statistic_get(request, meter_name, query=[]):
+    statistics = ceilometerclient(request).\
+        statistics.list(meter_name=meter_name, q=query)
+    assert len(statistics) == 1
+    return Statistic(statistics[0])
 
 
-def disk_io(request):
-    read_bytes = get_total_volume(sample_list(request, "disk.read.bytes"))
-    write_bytes = get_total_volume(sample_list(request, "disk.write.bytes"))
-    read_requests = get_total_volume(sample_list(request,
-                                                 "disk.read.requests"))
-    write_requests = get_total_volume(sample_list(request,
-                                                  "disk.write.requests"))
-
-    usage = merge_samples(read_bytes + write_bytes +
-                             read_requests + write_requests)
-    keystone_tenant_list = keystone.tenant_list(request)
-    keystone_user_list = keystone.user_list(request)
-    for u in usage:
-        for t in keystone_tenant_list:
-            if t.id == u.project_id:
-                u.tenant = t.name
-        for ks_user in keystone_user_list:
-            if ks_user.id == u.user_id:
-                u.user = ks_user.name
-    return usage
+def global_disk_usage(request):
+    return global_usage(request, ["disk.read.bytes", "disk.read.requests",
+                             "disk.write.bytes", "disk.write.requests"])
 
 
-def network_io(request):
-    incoming_bytes = get_total_volume(sample_list(request,
-                                                  "network.incoming.bytes"))
-    outgoing_bytes = get_total_volume(sample_list(request,
-                                                  "network.outgoing.bytes"))
-    incoming_packets = get_total_volume(sample_list(request,
-                                                  "network.incoming.packets"))
-    outgoing_packets = get_total_volume(sample_list(request,
-                                                  "network.outgoing.packets"))
-
-    usage = merge_samples(incoming_bytes + incoming_packets +
-                          outgoing_bytes + outgoing_packets)
-    keystone_tenant_list = keystone.tenant_list(request)
-    keystone_user_list = keystone.user_list(request)
-    for u in usage:
-        for t in keystone_tenant_list:
-            if t.id == u.project_id:
-                u.tenant = t.name
-        for ks_user in keystone_user_list:
-            if ks_user.id == u.user_id:
-                u.user = ks_user.name
-    return usage
+def global_network_usage(request):
+    return global_usage(request, ["network.incoming.bytes",
+                                  "network.incoming.packets",
+                                  "network.outgoing.bytes",
+                                  "network.outgoing.packets"])
 
 
-def merge_samples(sample_list):
+def global_usage(request, fields):
+    meters = meter_list(request)
+
+    filtered = filter(lambda m: m.name in fields, meters)
+
+    def get_query(user, project):
+        query = [{"field": "user",
+                  "op": "eq",
+                  "value": user},
+                 {"field": "project",
+                  "op": "eq",
+                  "value": project}]
+        return query
+
+    usage_list = []
+    ks_user_list = keystone.user_list(request)
+    ks_tenant_list = keystone.tenant_list(request, admin=True)
+
+    def get_user(user_id):
+        for u in ks_user_list:
+            if u.id == user_id:
+                return u.name
+        return user_id
+
+    def get_tenant(tenant_id):
+        for t in ks_tenant_list:
+            if t.id == tenant_id:
+                return t.name
+        return tenant_id
+
+    for m in filtered:
+        statistic = statistic_get(request, m.name,
+            query=get_query(m.user_id, m.project_id))
+        usage_list.append({"tenant": get_tenant(m.project_id),
+                      "user": get_user(m.user_id),
+                      "total": statistic.max,
+                      "counter_name": m.name.replace(".", "_"),
+                      "resource": m.resource_id})
+    return [GlobalDiskUsage(u) for u in _group_usage(usage_list)]
+
+
+def _group_usage(usage_list):
     """
-    Merge multiple sample lists to one list using combination
-    of ``resource_id``, ``user_id`` and ``project_id`` as keys.
-    """
-    result = {}
-    for sample in sample_list:
-        key = "%s_%s_%s" % (sample.resource_id,
-                            sample.user_id, sample.project_id)
-        counter_name = sample.counter_name.replace(".", "_")
-        if key in result:
-            setattr(result[key], counter_name, sample.counter_volume)
-        else:
-            setattr(sample, counter_name, sample.counter_volume)
-            result[key] = sample
-    return result.values()
-
-
-def get_total_volume(sample_list):
-    """
-    Get total volume of counter in a sample list.
-    It merges itmes which have the same ``resource_id``,
-    ``user_id``, ``project_id``.
+    Group usage data of different counters to one object.
+    The usage data in one group have the same resource,
+    user and project.
     """
     result = {}
-    for sample in sample_list:
-        key = "%s_%s_%s" % (sample.resource_id,
-                            sample.user_id, sample.project_id)
-        if key in result:
-            result[key].counter_volume += sample.counter_volume
-        else:
-            result[key] = sample
+    for s in usage_list:
+        key = "%s_%s_%s" % (s['user'], s['tenant'], s['resource'])
+        if key not in result:
+            result[key] = s
+        result[key].setdefault(s['counter_name'], s['total'])
     return result.values()

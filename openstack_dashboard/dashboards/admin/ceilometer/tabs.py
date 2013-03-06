@@ -20,34 +20,34 @@ from horizon import tabs
 
 from openstack_dashboard import api
 
-from .tables import DiskIOTable, NetworkIOTable
+from .tables import DiskUsageTable, NetworkUsageTable
 
 
-class DiskIOTab(tabs.TableTab):
-    table_classes = (DiskIOTable,)
-    name = _("Disk I/O")
-    slug = "diskio"
+class DiskUsageTab(tabs.TableTab):
+    table_classes = (DiskUsageTable,)
+    name = _("Global Disk Usage")
+    slug = "global_disk_usage"
     template_name = ("horizon/common/_detail_table.html")
 
-    def get_diskio_data(self):
+    def get_global_disk_usage_data(self):
         request = self.tab_group.request
-        result = api.ceilometer.disk_io(request)
+        result = api.ceilometer.global_disk_usage(request)
         return result
 
 
-class NetworkIOTab(tabs.TableTab):
-    table_classes = (NetworkIOTable,)
-    name = _("Network I/O")
-    slug = "networkio"
+class NetworkUsageTab(tabs.TableTab):
+    table_classes = (NetworkUsageTable,)
+    name = _("Global Network Usage")
+    slug = "global_network_usage"
     template_name = ("horizon/common/_detail_table.html")
 
-    def get_networkio_data(self):
+    def get_global_network_usage_data(self):
         request = self.tab_group.request
-        result = api.ceilometer.network_io(request)
+        result = api.ceilometer.global_network_usage(request)
         return result
 
 
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
-    tabs = (DiskIOTab, NetworkIOTab,)
+    tabs = (DiskUsageTab, NetworkUsageTab,)
     sticky = True

@@ -1,3 +1,4 @@
+
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Canonical Ltd.
@@ -25,7 +26,7 @@ from horizon.templatetags.sizeformat import filesizeformat, float_format
 LOG = logging.getLogger(__name__)
 
 
-class DiskIOFilterAction(tables.FilterAction):
+class DiskUsageFilterAction(tables.FilterAction):
     def filter(self, table, tenants, filter_string):
         q = filter_string.lower()
 
@@ -45,10 +46,10 @@ def get_write_bytes(sample):
     return filesizeformat(sample.disk_write_bytes, float_format)
 
 
-class  DiskIOTable(tables.DataTable):
+class  DiskUsageTable(tables.DataTable):
     tenant = tables.Column("tenant", verbose_name=_("Tenant"))
     user = tables.Column("user", verbose_name=_("User"))
-    instance = tables.Column("instance", verbose_name=_("Instance"))
+    instance = tables.Column("resource", verbose_name=_("Resource"))
     disk_read_bytes = tables.Column(get_read_bytes,
                             verbose_name=_("Disk Read Bytes"))
     disk_read_requests = tables.Column("disk_read_requests",
@@ -59,16 +60,16 @@ class  DiskIOTable(tables.DataTable):
                             verbose_name=_("Disk Write Requests"))
 
     def get_object_id(self, datum):
-        return datum.resource_id
+        return datum.tenant + datum.user + datum.resource
 
     class Meta:
-        name = "diskio"
-        verbose_name = _("Disk I/O")
-        table_actions = (DiskIOFilterAction,)
+        name = "global_disk_usage"
+        verbose_name = _("Global Disk Usage")
+        table_actions = (DiskUsageFilterAction,)
         multi_select = False
 
 
-class NetworkIOFilterAction(tables.FilterAction):
+class NetworkUsageFilterAction(tables.FilterAction):
     def filter(self, table, tenants, filter_string):
         q = filter_string.lower()
 
@@ -88,10 +89,10 @@ def get_outgoing_bytes(sample):
     return filesizeformat(sample.network_outgoing_bytes, float_format)
 
 
-class  NetworkIOTable(tables.DataTable):
+class  NetworkUsageTable(tables.DataTable):
     tenant = tables.Column("tenant", verbose_name=_("Tenant"))
     user = tables.Column("user", verbose_name=_("User"))
-    instance = tables.Column("instance", verbose_name=_("Instance"))
+    instance = tables.Column("resource", verbose_name=_("Resource"))
     network_incoming_bytes = tables.Column(get_incoming_bytes,
                             verbose_name=_("Network incoming Bytes"))
     network_incoming_packets = tables.Column("network_incoming_packets",
@@ -102,10 +103,10 @@ class  NetworkIOTable(tables.DataTable):
                             verbose_name=_("Network Outgoing Packets"))
 
     def get_object_id(self, datum):
-        return datum.resource_id
+        return datum.tenant + datum.user + datum.resource
 
     class Meta:
-        name = "networkio"
-        verbose_name = _("Network I/O")
-        table_actions = (NetworkIOFilterAction,)
+        name = "global_network_usage"
+        verbose_name = _("Global Network Usage")
+        table_actions = (NetworkUsageFilterAction,)
         multi_select = False
