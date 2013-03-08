@@ -45,19 +45,53 @@ class StringWithPlusOperation(str):
             return number, unit
         return None, None
 
+
+    # given a number and units, convert that to bytes
+    def to_bytes(self, number, unit):
+        if unit=="PB":
+            bytes = number * (1024 * 1024 * 1024 * 1024 * 1024)
+        elif unit=="TB":
+            bytes = number * (1024 * 1024 * 1024 * 1024)
+        elif unit=="GB":
+            bytes = number * (1024 * 1024 * 1024)
+        elif unit=="MB":
+            bytes = number * (1024 * 1024)
+        elif unit=="KB":
+            bytes = number * (1024)
+        else:
+            bytes = number
+
+        return bytes
+
+
     def __radd__(self, another):
         num_x, unit_x = self._split_str(self)
+        num_y = 0
+        unit_y = ""
 
         if isinstance(another, (int, float)):
             num_y = another
-        elif isinstance(another, str):
+        elif isinstance(another, basestring):
             num_y, unit_y = self._split_str(another)
         elif isinstance(another, self.__class__):
             num_y, unit_y = self._split_str(another.__str__())
 
         if num_y is None or num_x is None:
             return '-'
-        return "%s%s" % (num_x + num_y, unit_x)
+
+        unit_x = unit_x.strip()
+        unit_y = unit_y.strip()
+
+        if unit_x == unit_y:
+            return "%s%s" % (num_x + num_y, unit_x)
+        else:
+            # convert both units to bytes 
+            converted_num_x = self.to_bytes(num_x, unit_x)
+            converted_num_y = self.to_bytes(num_y, unit_y)
+
+            total = converted_num_x + converted_num_y
+            result = filesizeformat(total, float_format)
+            return result
 
 
 class DiskUsageFilterAction(tables.FilterAction):
@@ -83,20 +117,20 @@ def get_write_bytes(sample):
 
 
 class  DiskUsageTable(tables.DataTable):
-    tenant = tables.Column("tenant", verbose_name=_("Tenant"))
-    user = tables.Column("user", verbose_name=_("User"))
-    instance = tables.Column("resource", verbose_name=_("Resource"))
+    tenant = tables.Column("tenant", verbose_name=_("Tenant"), sortable=True)
+    user = tables.Column("user", verbose_name=_("User"), sortable=True)
+    instance = tables.Column("resource", verbose_name=_("Resource"), sortable=True)
     disk_read_bytes = tables.Column(get_read_bytes,
-                            verbose_name=_("Disk Read Bytes"), summation="sum")
+                            verbose_name=_("Disk Read Bytes"), summation="sum", sortable=True)
     disk_read_requests = tables.Column("disk_read_requests",
                             verbose_name=_("Disk Read Requests"),
-                            summation="sum")
+                            summation="sum", sortable=True)
     disk_write_bytes = tables.Column(get_write_bytes,
                             verbose_name=_("Disk Write Bytes"),
-                            summation="sum")
+                            summation="sum", sortable=True)
     disk_write_requests = tables.Column("disk_write_requests",
                             verbose_name=_("Disk Write Requests"),
-                            summation="sum")
+                            summation="sum", sortable=True)
 
     def get_object_id(self, datum):
         return datum.tenant + datum.user + datum.resource
@@ -106,6 +140,7 @@ class  DiskUsageTable(tables.DataTable):
         verbose_name = _("Global Disk Usage")
         table_actions = (DiskUsageFilterAction,)
         multi_select = False
+        template = "admin/ceilometer/table_with_date_selectors.html"
 
 
 class NetworkUsageFilterAction(tables.FilterAction):
@@ -132,20 +167,20 @@ def get_outgoing_bytes(sample):
 
 class  NetworkUsageTable(tables.DataTable):
     tenant = tables.Column("tenant", verbose_name=_("Tenant"))
-    user = tables.Column("user", verbose_name=_("User"))
-    instance = tables.Column("resource", verbose_name=_("Resource"))
+    user = tables.Column("user", verbose_name=_("User"), sortable=True)
+    instance = tables.Column("resource", verbose_name=_("Resource"), sortable=True)
     network_incoming_bytes = tables.Column(get_incoming_bytes,
                             verbose_name=_("Network incoming Bytes"),
-                            summation="sum")
+                            summation="sum", sortable=True)
     network_incoming_packets = tables.Column("network_incoming_packets",
                             verbose_name=_("Network incoming Packets"),
-                            summation="sum")
+                            summation="sum", sortable=True)
     network_outgoing_bytes = tables.Column(get_outgoing_bytes,
                             verbose_name=_("Network Outgoing Bytes"),
-                            summation="sum")
+                            summation="sum", sortable=True)
     network_outgoing_packets = tables.Column("network_outgoing_packets",
                             verbose_name=_("Network Outgoing Packets"),
-                            summation="sum")
+                            summation="sum", sortable=True)
 
     def get_object_id(self, datum):
         return datum.tenant + datum.user + datum.resource

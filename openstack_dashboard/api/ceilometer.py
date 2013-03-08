@@ -132,10 +132,11 @@ def global_usage(request, fields):
 
     filtered = filter(lambda m: m.name in fields, meters)
 
-    def get_query(resource):
-        query = [{"field": "resource",
-                  "op": "eq",
-                  "value": resource}]
+    def get_query(user, project, resource):
+        query = [({"field": "resource", "op": "eq", "value": resource}),
+                 ({"field": "user", "op": "eq", "value": user}),
+                 ({"field": "project", "op": "eq", "value": project})
+        ]
         return query
 
     usage_list = []
@@ -156,7 +157,7 @@ def global_usage(request, fields):
 
     for m in filtered:
         statistic = statistic_get(request, m.name,
-            query=get_query(m.resource_id))
+            query=get_query(m.user_id, m.project_id, m.resource_id))
         usage_list.append({"tenant": get_tenant(m.project_id),
                       "user": get_user(m.user_id),
                       "total": statistic.max,
