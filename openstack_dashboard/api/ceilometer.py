@@ -20,8 +20,6 @@ import urlparse
 from django.conf import settings
 from ceilometerclient import client as ceilometer_client
 
-from horizon import exceptions
-
 from .base import APIResourceWrapper, APIDictWrapper, url_for
 
 import keystone
@@ -83,48 +81,44 @@ def ceilometerclient(request):
 
 def sample_list(request, meter_name, query=[]):
     """List the samples for this meters."""
-    try:
-        samples = ceilometerclient(request).\
-            samples.list(meter_name=meter_name,
-                         q=query)
-    except:
-        samples = []
-        LOG.exception("Sample list from Ceilometer not found: %s" % meter_name)
-        exceptions.handle(request)
-
+    samples = ceilometerclient(request).samples.list(meter_name=meter_name,
+                     q=query)
     return [Sample(s) for s in samples]
 
 
 def meter_list(request, query=[]):
     """List the user's meters."""
     meters = ceilometerclient(request).meters.list(q=query)
-    return meters
+    return [Meter(m) for m in meters]
 
 
 def resource_list(request, query=[]):
     """List the resources."""
     resources = ceilometerclient(request).\
-        resources.list(query)
-    return resources
+        resources.list(q=query)
+    return [Resource(r) for r in resources]
 
 
-def statistic_get(request, meter_name, query=[]):
+def statistic_list(request, meter_name, query=[]):
     statistics = ceilometerclient(request).\
         statistics.list(meter_name=meter_name, q=query)
-    assert len(statistics) == 1
-    return Statistic(statistics[0])
+    return [Statistic(s) for s in statistics]
 
 
 def global_disk_usage(request):
-    return global_usage(request, ["disk.read.bytes", "disk.read.requests",
-                             "disk.write.bytes", "disk.write.requests"])
+    result_list = global_usage(request, ["disk.read.bytes",
+                                         "disk.read.requests",
+                                         "disk.write.bytes",
+                                         "disk.write.requests"])
+    return [GlobalDiskUsage(u) for u in result_list]
 
 
 def global_network_usage(request):
-    return global_usage(request, ["network.incoming.bytes",
+    result_list = global_usage(request, ["network.incoming.bytes",
                                   "network.incoming.packets",
                                   "network.outgoing.bytes",
                                   "network.outgoing.packets"])
+    return [GlobalNetworkUsage(u) for u in result_list]
 
 
 def global_usage(request, fields):
@@ -135,8 +129,7 @@ def global_usage(request, fields):
     def get_query(user, project, resource):
         query = [({"field": "resource", "op": "eq", "value": resource}),
                  ({"field": "user", "op": "eq", "value": user}),
-                 ({"field": "project", "op": "eq", "value": project})
-        ]
+                 ({"field": "project", "op": "eq", "value": project})]
         return query
 
     usage_list = []
@@ -156,14 +149,16 @@ def global_usage(request, fields):
         return tenant_id
 
     for m in filtered:
-        statistic = statistic_get(request, m.name,
+        statistics = statistic_list(request, m.name,
             query=get_query(m.user_id, m.project_id, m.resource_id))
+        # TODO: It seems that there's only one element in statistic list.
+        statistic = statistics[0]
         usage_list.append({"tenant": get_tenant(m.project_id),
                       "user": get_user(m.user_id),
                       "total": statistic.max,
                       "counter_name": m.name.replace(".", "_"),
                       "resource": m.resource_id})
-    return [GlobalDiskUsage(u) for u in _group_usage(usage_list)]
+    return _group_usage(usage_list)
 
 
 def _group_usage(usage_list):
