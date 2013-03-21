@@ -20,11 +20,9 @@ from django.core.context_processors import csrf
 
 from horizon import tabs
 
-from openstack_dashboard import api
-from openstack_dashboard.api import ceilometer
-from openstack_dashboard.api import keystone
+from openstack_dashboard.api import keystone, ceilometer
 
-from .tables import DiskUsageTable, NetworkUsageTable
+from .tables import DiskUsageTable, NetworkUsageTable, CpuUsageTable
 
 
 class DiskUsageTab(tabs.TableTab):
@@ -35,7 +33,8 @@ class DiskUsageTab(tabs.TableTab):
 
     def get_global_disk_usage_data(self):
         request = self.tab_group.request
-        result = sorted(api.ceilometer.global_disk_usage(request), key=operator.itemgetter('tenant', 'user'))
+        result = sorted(ceilometer.global_disk_usage(request),
+                        key=operator.itemgetter('tenant', 'user'))
         return result
 
 
@@ -47,8 +46,23 @@ class NetworkUsageTab(tabs.TableTab):
 
     def get_global_network_usage_data(self):
         request = self.tab_group.request
-        result = sorted(api.ceilometer.global_network_usage(request), key=operator.itemgetter('tenant', 'user'))
+        result = sorted(ceilometer.global_network_usage(request),
+                        key=operator.itemgetter('tenant', 'user'))
         return result
+
+
+class CpuUsageTab(tabs.TableTab):
+    table_classes = (CpuUsageTable,)
+    name = _("Global CPU Usage")
+    slug = "global_cpu_usage"
+    template_name = ("horizon/common/_detail_table.html")
+
+    def get_global_cpu_usage_data(self):
+        request = self.tab_group.request
+        result = sorted(ceilometer.global_cpu_usage(request),
+                        key=operator.itemgetter('tenant', 'user'))
+        return result
+
 
 class StatsTab(tabs.Tab):
     name = _("Stats")
@@ -69,7 +83,9 @@ class StatsTab(tabs.Tab):
                         meter_type = "network"
                     else:
                         meter_type = "instance"
-                    meters.append({"name":meter.name, "type":meter_type})
+                    meters.append({"name": meter.name,
+                                   "type": meter_type,
+                                   "unit": meter.unit})
                     found_meters.append(meter.name)
 
         # first list all tenants
@@ -86,7 +102,7 @@ class StatsTab(tabs.Tab):
 
             # read resources for that user
             query = [
-                {'field':'user', 'op':'eq', 'value':user.id}
+                {'field': 'user', 'op': 'eq', 'value': user.id}
             ]
 
             resource_list = ceilometer.resource_list(self.request, query)
@@ -97,17 +113,24 @@ class StatsTab(tabs.Tab):
                     else:
                         resource_type = "instance"
 
-                    resources[user.id]["resources"].append({"id":resource.resource_id, "name":resource.metadata["name"]+" - "+resource.resource_id, "type":resource_type})
+                    resources[user.id]["resources"].append({
+                        "id": resource.resource_id,
+                        "name": resource.metadata["name"] + " - " +
+                                resource.resource_id,
+                        "type": resource_type})
 
             # sort by resource name
-            resources[user.id]["resources"] = sorted(resources[user.id]["resources"], key=operator.itemgetter("name"))
+            resources[user.id]["resources"] = \
+                sorted(resources[user.id]["resources"],
+                       key=operator.itemgetter("name"))
 
         resources = sorted(resources.values(), key=operator.itemgetter("name"))
         context = {'meters': meters, 'resources': resources}
         context.update(csrf(request))
         return context
 
+
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
-    tabs = (DiskUsageTab, NetworkUsageTab,StatsTab,)
+    tabs = (DiskUsageTab, NetworkUsageTab, CpuUsageTab, StatsTab,)
     sticky = True

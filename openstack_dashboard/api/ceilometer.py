@@ -33,7 +33,7 @@ class Meter(APIResourceWrapper):
 
 
 class Resource(APIResourceWrapper):
-    _attrs = ['resource_id', "source", "user_id", "project_id"]
+    _attrs = ['resource_id', "source", "user_id", "project_id", "metadata"]
 
 
 class Sample(APIResourceWrapper):
@@ -57,10 +57,14 @@ class GlobalDiskUsage(APIDictWrapper):
               "disk_write_requests"]
 
 
-class GlobalNetworkUsage(APIResourceWrapper):
+class GlobalNetworkUsage(APIDictWrapper):
     _attrs = ["tenant", "user", "resource", "network_incoming_bytes",
               "network_incoming_packets", "network_outgoing_bytes",
               "network_outgoing_packets"]
+
+
+class GlobalCpuUsage(APIDictWrapper):
+    _attrs = ["tenant", "user", "resource", "cpu"]
 
 
 class Statistic(APIResourceWrapper):
@@ -103,6 +107,11 @@ def statistic_list(request, meter_name, query=[]):
     statistics = ceilometerclient(request).\
         statistics.list(meter_name=meter_name, q=query)
     return [Statistic(s) for s in statistics]
+
+
+def global_cpu_usage(request):
+    result_list = global_usage(request, ["cpu"])
+    return [GlobalCpuUsage(u) for u in result_list]
 
 
 def global_disk_usage(request):

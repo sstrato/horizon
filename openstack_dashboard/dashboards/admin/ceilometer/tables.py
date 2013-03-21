@@ -45,24 +45,22 @@ class StringWithPlusOperation(str):
             return number, unit
         return None, None
 
-
     # given a number and units, convert that to bytes
     def to_bytes(self, number, unit):
-        if unit=="PB":
+        if unit == "PB":
             bytes = number * (1024 * 1024 * 1024 * 1024 * 1024)
-        elif unit=="TB":
+        elif unit == "TB":
             bytes = number * (1024 * 1024 * 1024 * 1024)
-        elif unit=="GB":
+        elif unit == "GB":
             bytes = number * (1024 * 1024 * 1024)
-        elif unit=="MB":
+        elif unit == "MB":
             bytes = number * (1024 * 1024)
-        elif unit=="KB":
+        elif unit == "KB":
             bytes = number * (1024)
         else:
             bytes = number
 
         return bytes
-
 
     def __radd__(self, another):
         num_x, unit_x = self._split_str(self)
@@ -85,13 +83,36 @@ class StringWithPlusOperation(str):
         if unit_x == unit_y:
             return "%s%s" % (num_x + num_y, unit_x)
         else:
-            # convert both units to bytes 
+            # convert both units to bytes
             converted_num_x = self.to_bytes(num_x, unit_x)
             converted_num_y = self.to_bytes(num_y, unit_y)
 
             total = converted_num_x + converted_num_y
             result = filesizeformat(total, float_format)
             return result
+
+
+class StringWithPlusOperationForTime(str):
+    """Override "+" operation for string object to make."""
+    def __init__(self, *args, **kwargs):
+        super(StringWithPlusOperationForTime, self).__init__(*args, **kwargs)
+
+    def __radd__(self, another):
+        # convert to seconds, add them and convert again
+        seconds1 = sum(int(x) * 60 ** i for i, x
+                        in enumerate(reversed(self.split(":"))))
+        if isinstance(another, (int, float)):
+            seconds2 = another
+        else:
+            seconds2 = sum(int(x) * 60 ** i for i, x
+                        in enumerate(reversed(another.split(":"))))
+
+        total_time = seconds1 + seconds2
+        converted = "%02d:%02d:%02d" % \
+            reduce(lambda a, b: divmod(a[0], b) + a[1:],
+                   [(total_time,), 60, 60])
+
+        return str(converted)
 
 
 class DiskUsageFilterAction(tables.FilterAction):
@@ -116,21 +137,28 @@ def get_write_bytes(sample):
     return StringWithPlusOperation(result)
 
 
-class  DiskUsageTable(tables.DataTable):
+class DiskUsageTable(tables.DataTable):
     tenant = tables.Column("tenant", verbose_name=_("Tenant"), sortable=True)
     user = tables.Column("user", verbose_name=_("User"), sortable=True)
-    instance = tables.Column("resource", verbose_name=_("Resource"), sortable=True)
+    instance = tables.Column("resource",
+                             verbose_name=_("Resource"),
+                             sortable=True)
     disk_read_bytes = tables.Column(get_read_bytes,
-                            verbose_name=_("Disk Read Bytes"), summation="sum", sortable=True)
+                                    verbose_name=_("Disk Read Bytes"),
+                                    summation="sum",
+                                    sortable=True)
     disk_read_requests = tables.Column("disk_read_requests",
-                            verbose_name=_("Disk Read Requests"),
-                            summation="sum", sortable=True)
+                                       verbose_name=_("Disk Read Requests"),
+                                       summation="sum",
+                                       sortable=True)
     disk_write_bytes = tables.Column(get_write_bytes,
-                            verbose_name=_("Disk Write Bytes"),
-                            summation="sum", sortable=True)
+                                     verbose_name=_("Disk Write Bytes"),
+                                     summation="sum",
+                                     sortable=True)
     disk_write_requests = tables.Column("disk_write_requests",
-                            verbose_name=_("Disk Write Requests"),
-                            summation="sum", sortable=True)
+                                        verbose_name=_("Disk Write Requests"),
+                                        summation="sum",
+                                        sortable=True)
 
     def get_object_id(self, datum):
         return datum.tenant + datum.user + datum.resource
@@ -155,6 +183,18 @@ class NetworkUsageFilterAction(tables.FilterAction):
         return filter(comp, tenants)
 
 
+class CpuUsageFilterAction(tables.FilterAction):
+    def filter(self, table, tenants, filter_string):
+        q = filter_string.lower()
+
+        def comp(tenant):
+            if q in tenant.name.lower():
+                return True
+            return False
+
+        return filter(comp, tenants)
+
+
 def get_incoming_bytes(sample):
     result = filesizeformat(sample.network_incoming_bytes, float_format)
     return StringWithPlusOperation(result)
@@ -165,13 +205,16 @@ def get_outgoing_bytes(sample):
     return StringWithPlusOperation(result)
 
 
-class  NetworkUsageTable(tables.DataTable):
+class NetworkUsageTable(tables.DataTable):
     tenant = tables.Column("tenant", verbose_name=_("Tenant"))
     user = tables.Column("user", verbose_name=_("User"), sortable=True)
-    instance = tables.Column("resource", verbose_name=_("Resource"), sortable=True)
+    instance = tables.Column("resource",
+                             verbose_name=_("Resource"),
+                             sortable=True)
     network_incoming_bytes = tables.Column(get_incoming_bytes,
-                            verbose_name=_("Network incoming Bytes"),
-                            summation="sum", sortable=True)
+                                   verbose_name=_("Network incoming Bytes"),
+                                   summation="sum",
+                                   sortable=True)
     network_incoming_packets = tables.Column("network_incoming_packets",
                             verbose_name=_("Network incoming Packets"),
                             summation="sum", sortable=True)
@@ -189,4 +232,32 @@ class  NetworkUsageTable(tables.DataTable):
         name = "global_network_usage"
         verbose_name = _("Global Network Usage")
         table_actions = (NetworkUsageFilterAction,)
+        multi_select = False
+
+
+def get_cpu_time(sample):
+    cpu_seconds = sample.cpu / 1000000000
+    formatted_time = "%02d:%02d:%02d" % \
+        reduce(lambda a, b: divmod(a[0], b) + a[1:], [(cpu_seconds,), 60, 60])
+    return StringWithPlusOperationForTime(formatted_time)
+
+
+class CpuUsageTable(tables.DataTable):
+    tenant = tables.Column("tenant", verbose_name=_("Tenant"))
+    user = tables.Column("user", verbose_name=_("User"), sortable=True)
+    instance = tables.Column("resource",
+                             verbose_name=_("Resource"),
+                             sortable=True)
+    cpu = tables.Column(get_cpu_time,
+                        verbose_name=_("CPU time"),
+                        summation="sum",
+                        sortable=True)
+
+    def get_object_id(self, datum):
+        return datum.tenant + datum.user + datum.resource
+
+    class Meta:
+        name = "global_cpu_usage"
+        verbose_name = _("Global CPU Usage")
+        table_actions = (CpuUsageFilterAction,)
         multi_select = False
