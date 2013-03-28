@@ -75,7 +75,7 @@ class Statistic(APIResourceWrapper):
 
 def ceilometerclient(request):
     o = urlparse.urlparse(url_for(request, 'metering'))
-    url = "://".join((o.scheme, o.netloc))
+    url = o.geturl() 
     insecure = getattr(settings, 'OPENSTACK_SSL_NO_VERIFY', False)
     LOG.debug('ceilometerclient connection created using token "%s" '
               'and url "%s"' % (request.user.token.id, url))
