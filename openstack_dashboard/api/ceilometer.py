@@ -35,6 +35,12 @@ class Meter(APIResourceWrapper):
 class Resource(APIResourceWrapper):
     _attrs = ['resource_id', "source", "user_id", "project_id", "metadata"]
 
+    @property
+    def name(self):
+        name = self.metadata.get("name", None)
+        display_name = self.metadata.get("display_name", None)
+        return name or display_name or ""
+
 
 class Sample(APIResourceWrapper):
     _attrs = ['counter_name', 'user_id', 'resource_id', 'timestamp',
@@ -49,6 +55,12 @@ class Sample(APIResourceWrapper):
             return self.resource_metadata['instance_id']
         else:
             return None
+
+    @property
+    def name(self):
+        name = self.resource_metadata.get("name", None)
+        display_name = self.resource_metadata.get("display_name", None)
+        return name or display_name or ""
 
 
 class GlobalDiskUsage(APIDictWrapper):
@@ -75,7 +87,7 @@ class Statistic(APIResourceWrapper):
 
 def ceilometerclient(request):
     o = urlparse.urlparse(url_for(request, 'metering'))
-    url = o.geturl() 
+    url = o.geturl()
     insecure = getattr(settings, 'OPENSTACK_SSL_NO_VERIFY', False)
     LOG.debug('ceilometerclient connection created using token "%s" '
               'and url "%s"' % (request.user.token.id, url))

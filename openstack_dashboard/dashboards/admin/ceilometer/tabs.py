@@ -115,8 +115,8 @@ class StatsTab(tabs.Tab):
 
                     resources[user.id]["resources"].append({
                         "id": resource.resource_id,
-                        "name": resource.metadata["name"] + " - " +
-                                resource.resource_id,
+                        "name": "%s - %s" %
+                            (resource.name, resource.resource_id),
                         "type": resource_type})
 
             # sort by resource name
