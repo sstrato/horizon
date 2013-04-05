@@ -63,6 +63,12 @@ class Sample(APIResourceWrapper):
         return name or display_name or ""
 
 
+class GlobalObjectStoreUsage(APIDictWrapper):
+    _attrs = ["tenant", "user", "resource", "storage_objects",
+              "storage_objects_size", "storage_objects_outgoing_bytes",
+              "storage_objects_incoming_bytes"]
+
+
 class GlobalDiskUsage(APIDictWrapper):
     _attrs = ["tenant", "user", "resource", "disk_read_bytes",
               "disk_read_requests", "disk_write_bytes",
@@ -92,13 +98,13 @@ def ceilometerclient(request):
     LOG.debug('ceilometerclient connection created using token "%s" '
               'and url "%s"' % (request.user.token.id, url))
     return ceilometer_client.Client('2', url, token=request.user.token.id,
-                             insecure=insecure)
+                                    insecure=insecure)
 
 
 def sample_list(request, meter_name, query=[]):
     """List the samples for this meters."""
     samples = ceilometerclient(request).samples.list(meter_name=meter_name,
-                     q=query)
+                                                     q=query)
     return [Sample(s) for s in samples]
 
 
@@ -126,6 +132,14 @@ def global_cpu_usage(request):
     return [GlobalCpuUsage(u) for u in result_list]
 
 
+def global_object_store_usage(request):
+    result_list = global_usage(request, ["storage.objects",
+                                         "storage.objects.size",
+                                         "storage.objects.incoming.bytes",
+                                         "storage.objects.outgoing.bytes"])
+    return [GlobalObjectStoreUsage(u) for u in result_list]
+
+
 def global_disk_usage(request):
     result_list = global_usage(request, ["disk.read.bytes",
                                          "disk.read.requests",
@@ -136,9 +150,9 @@ def global_disk_usage(request):
 
 def global_network_usage(request):
     result_list = global_usage(request, ["network.incoming.bytes",
-                                  "network.incoming.packets",
-                                  "network.outgoing.bytes",
-                                  "network.outgoing.packets"])
+                                         "network.incoming.packets",
+                                         "network.outgoing.bytes",
+                                         "network.outgoing.packets"])
     return [GlobalNetworkUsage(u) for u in result_list]
 
 
@@ -148,9 +162,13 @@ def global_usage(request, fields):
     filtered = filter(lambda m: m.name in fields, meters)
 
     def get_query(user, project, resource):
-        query = [({"field": "resource", "op": "eq", "value": resource}),
-                 ({"field": "user", "op": "eq", "value": user}),
-                 ({"field": "project", "op": "eq", "value": project})]
+        query = []
+        if user:
+            query.append({"field": "user", "op": "eq", "value": user})
+        if project:
+            query.append({"field": "project", "op": "eq", "value": project})
+        if resource:
+            query.append({"field": "resource", "op": "eq", "value": resource})
         return query
 
     usage_list = []
@@ -171,27 +189,36 @@ def global_usage(request, fields):
 
     for m in filtered:
         statistics = statistic_list(request, m.name,
-            query=get_query(m.user_id, m.project_id, m.resource_id))
+                                    query=get_query(m.user_id,
+                                                    m.project_id,
+                                                    m.resource_id))
         # TODO: It seems that there's only one element in statistic list.
+        # TODO: if statistics is []
         statistic = statistics[0]
+
         usage_list.append({"tenant": get_tenant(m.project_id),
-                      "user": get_user(m.user_id),
-                      "total": statistic.max,
-                      "counter_name": m.name.replace(".", "_"),
-                      "resource": m.resource_id})
-    return _group_usage(usage_list)
+                          "user": get_user(m.user_id),
+                          "total": statistic.max,
+                          "counter_name": m.name.replace(".", "_"),
+                          "resource": m.resource_id})
+    return _group_usage(usage_list, fields)
 
 
-def _group_usage(usage_list):
+def _group_usage(usage_list, fields=[]):
     """
     Group usage data of different counters to one object.
     The usage data in one group have the same resource,
     user and project.
     """
+    fields = [f.replace(".", "_") for f in fields]
     result = {}
     for s in usage_list:
         key = "%s_%s_%s" % (s['user'], s['tenant'], s['resource'])
         if key not in result:
             result[key] = s
-        result[key].setdefault(s['counter_name'], s['total'])
+        # Make sure each object contains the fields that may not
+        # be achived from ceilometer.
+        for f in fields:
+            result[key].setdefault(f, 0)
+        result[key].update({s['counter_name']: s['total']})
     return result.values()
