@@ -71,7 +71,6 @@ def reduce_metrics(samples):
 
 
 class SamplesView(View):
-
     # converts string to date
     def _to_iso_time(self, date_str):
         date_object = datetime.strptime(date_str, '%m/%d/%Y %H:%M:%S')
@@ -106,42 +105,54 @@ class SamplesView(View):
 
         if date_from:
             date_from = self._to_iso_time(date_from + ' 00:00:00')
-            query.append({'field': 'timestamp',
-                          'op': 'ge',
+            query.append({'field': 'timestamp', 'op': 'ge',
                           'value': date_from})
 
         if date_to:
             date_to = self._to_iso_time(date_to + " 23:59:59")
             query.append({'field': 'timestamp', 'op': 'le', 'value': date_to})
 
+        samples = []
+        meter_type = ""
         if source and resource:
             query.append({'field': 'resource', 'op': 'eq', 'value': resource})
             sample_list = ceilometer.sample_list(self.request, source, query)
 
-            samples = []
             previous = self._get_previous_val(source, resource, date_from)
 
             for sample_data in sample_list:
                 current_volume = sample_data.counter_volume
 
-                current_delta = current_volume - previous
-                previous = current_volume
-                if current_delta < 0:
+                # if sample is cumulative, substract previous val
+                meter_type = sample_data.counter_type
+                if sample_data.counter_type == "cumulative":
+                    current_delta = current_volume - previous
+                    previous = current_volume
+                    if current_delta < 0:
+                        current_delta = current_volume
+                else:
                     current_delta = current_volume
-                samples.append([sample_data.timestamp, current_delta])
+                samples.append([sample_data.timestamp[:19], current_delta])
 
-        # if requested period is too long, interpolate data
-        date_start_obj = datetime.strptime(date_from, "%Y-%m-%d %H:%M:%S")
-        date_end_obj = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
-        delta = (date_end_obj - date_start_obj).days
+            # if requested period is too long,
+            # interpolate data, for cumulative metrics
+            if meter_type == "cumulative":
+                date_start_obj = datetime.strptime(date_from,
+                                                   "%Y-%m-%d %H:%M:%S")
+                date_end_obj = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
+                delta = (date_end_obj - date_start_obj).days
 
-        if delta >= 365:
-            samples = map(to_days, samples)
-            samples = reduce_metrics(samples)
-        elif delta >= 30:
-            # reduce metrics to hours
-            samples = map(to_hours, samples)
-            samples = reduce_metrics(samples)
+                if delta >= 365:
+                    samples = map(to_days, samples)
+                    samples = reduce_metrics(samples)
+                elif delta >= 30:
+                    # reduce metrics to hours
+                    samples = map(to_hours, samples)
+                    samples = reduce_metrics(samples)
+            else:
+                # add measures of 0 for start and end
+                samples.append([date_from.replace(" ", "T"), 0])
+                samples.append([date_to.replace(" ", "T"), 0])
 
         # output csv
         headers = ['date', 'value']
