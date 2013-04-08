@@ -22,8 +22,8 @@ from horizon import tabs
 
 from openstack_dashboard.api import ceilometer
 
-from .tables import (DiskUsageTable, NetworkUsageTable,
-                     CpuUsageTable, ObjectStoreUsageTable)
+from .tables import (DiskUsageTable, NetworkTrafficUsageTable,
+                     CpuUsageTable, ObjectStoreUsageTable, NetworkUsageTable)
 
 
 class DiskUsageTab(tabs.TableTab):
@@ -35,6 +35,19 @@ class DiskUsageTab(tabs.TableTab):
     def get_global_disk_usage_data(self):
         request = self.tab_group.request
         result = sorted(ceilometer.global_disk_usage(request),
+                        key=operator.itemgetter('tenant', 'user'))
+        return result
+
+
+class NetworkTrafficUsageTab(tabs.TableTab):
+    table_classes = (NetworkTrafficUsageTable,)
+    name = _("Global Network Traffic Usage")
+    slug = "global_network_traffic_usage"
+    template_name = ("horizon/common/_detail_table.html")
+
+    def get_global_network_traffic_usage_data(self):
+        request = self.tab_group.request
+        result = sorted(ceilometer.global_network_traffic_usage(request),
                         key=operator.itemgetter('tenant', 'user'))
         return result
 
@@ -140,6 +153,6 @@ class StatsTab(tabs.Tab):
 
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
-    tabs = (DiskUsageTab, NetworkUsageTab, GlobalObjectStoreUsageTab,
-            CpuUsageTab, StatsTab,)
+    tabs = (DiskUsageTab, NetworkTrafficUsageTab, NetworkUsageTab,
+            GlobalObjectStoreUsageTab, CpuUsageTab, StatsTab,)
     sticky = True

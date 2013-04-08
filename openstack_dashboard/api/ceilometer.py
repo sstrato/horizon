@@ -75,7 +75,7 @@ class GlobalDiskUsage(APIDictWrapper):
               "disk_write_requests"]
 
 
-class GlobalNetworkUsage(APIDictWrapper):
+class GlobalNetworkTrafficUsage(APIDictWrapper):
     _attrs = ["tenant", "user", "resource", "network_incoming_bytes",
               "network_incoming_packets", "network_outgoing_bytes",
               "network_outgoing_packets"]
@@ -83,6 +83,12 @@ class GlobalNetworkUsage(APIDictWrapper):
 
 class GlobalCpuUsage(APIDictWrapper):
     _attrs = ["tenant", "user", "resource", "cpu"]
+
+
+class GlobalNetworkUsage(APIDictWrapper):
+    _attrs = ["tenant", "user", "resource", "network", "network_create",
+              "subnet", "subnet_create", "port", "port_create", "router",
+              "router_create", "ip_floating", "ip_floating_create"]
 
 
 class Statistic(APIResourceWrapper):
@@ -148,11 +154,20 @@ def global_disk_usage(request):
     return [GlobalDiskUsage(u) for u in result_list]
 
 
-def global_network_usage(request):
+def global_network_traffic_usage(request):
     result_list = global_usage(request, ["network.incoming.bytes",
                                          "network.incoming.packets",
                                          "network.outgoing.bytes",
                                          "network.outgoing.packets"])
+    return [GlobalNetworkTrafficUsage(u) for u in result_list]
+
+
+def global_network_usage(request):
+    result_list = global_usage(request, ["network", "network_create",
+                                         "subnet", "subnet_create",
+                                         "port", "port_create",
+                                         "router", "router_create",
+                                         "ip_floating", "ip_floating_create"])
     return [GlobalNetworkUsage(u) for u in result_list]
 
 
