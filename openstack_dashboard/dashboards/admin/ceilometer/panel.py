@@ -24,6 +24,7 @@ from openstack_dashboard.dashboards.admin import dashboard
 class Ceilometer(horizon.Panel):
     name = _("Resources usage")
     slug = 'ceilometer'
+    permissions = ('openstack.services.metering',)
 
 
 dashboard.Admin.register(Ceilometer)
