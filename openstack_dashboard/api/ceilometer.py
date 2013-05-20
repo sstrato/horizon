@@ -188,7 +188,7 @@ def global_usage(request, fields):
 
     usage_list = []
     ks_user_list = keystone.user_list(request)
-    ks_tenant_list = keystone.tenant_list(request, admin=True)
+    ks_tenant_list = keystone.tenant_list(request)
 
     def get_user(user_id):
         for u in ks_user_list:
