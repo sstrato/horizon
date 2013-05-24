@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load url from future %}
 <style>
 .stats_selector
 {
@@ -85,7 +86,7 @@
 </div>
 <div id="chart_container"></div>
 
-<form id="svgform" name="svgform" method="POST" action="{%url horizon:admin:ceilometer:export %}">
+<form id="svgform" name="svgform" method="POST" action="{%url "horizon:admin:ceilometer:export" %}">
 	{% csrf_token %}
 	<input type="hidden" id="svgdata" name="svgdata" value="" />
 </form>
@@ -123,7 +124,7 @@
 	if (sample && resource)
 	{
 		var date_ts = (new Date()).getTime();
-        	d3.csv("{%url horizon:admin:ceilometer:samples %}?ts="+date_ts+"&sample="+sample+"&resource="+resource+"&from="+from+"&to="+to,
+        	d3.csv("{%url "horizon:admin:ceilometer:samples" %}?ts="+date_ts+"&sample="+sample+"&resource="+resource+"&from="+from+"&to="+to,
 			function(error,data) {
 				var chart_title = $("#meter").val()+" {% trans "for resource" %} "+$("#resource").val()+" ({% trans "From" %} "+
 					$("#date_from").val()+" {% trans "to" %} "+$("#date_to").val()+")";
@@ -141,7 +142,7 @@
 					d.date = parseDate(d.date);
 					d.value = +d.value;
 				});
-	
+
 				x.domain(d3.extent(data, function(d) { return d.date; }));
 				y.domain(d3.extent(data, function(d) { return d.value; }));
 
@@ -199,7 +200,7 @@
 						.style("fill", "steelblue")
       						.attr("x", function(d) { return x(d.date); })
       						.attr("y", function(d) { return y(d.value); })
-      						.attr("height", function(d) { return height - y(d.value); });						
+      						.attr("height", function(d) { return height - y(d.value); });
 				}
 
 				svg.append("text")
@@ -347,7 +348,7 @@
 
 	$("#action_export_chart").click(function()
 	{
-		submit_download_form();		
+		submit_download_form();
 	});
 
 	$("#date_options").change(function()
