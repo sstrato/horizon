@@ -75,16 +75,16 @@ class CeilometerApiTests(test.APITestCase):
             self.assertIsInstance(s, api.ceilometer.Statistic)
 
     @test.create_stubs({api.ceilometer: ("global_usage",)})
-    def test_global_network_usage(self):
+    def test_global_network_traffic_usage(self):
         usages = self.global_network_usages.list()
         fields = ["network.incoming.bytes", "network.incoming.packets",
                   "network.outgoing.bytes", "network.outgoing.packets"]
         api.ceilometer.global_usage(IsA(http.HttpRequest), fields).\
             AndReturn(usages)
         self.mox.ReplayAll()
-        usage_list = api.ceilometer.global_network_usage(self.request)
+        usage_list = api.ceilometer.global_network_traffic_usage(self.request)
         for u in usage_list:
-            self.assertIsInstance(u, api.ceilometer.GlobalNetworkUsage)
+            self.assertIsInstance(u, api.ceilometer.GlobalNetworkTrafficUsage)
 
     @test.create_stubs({api.ceilometer: ("global_usage",)})
     def test_global_disk_usage(self):
@@ -141,7 +141,7 @@ class CeilometerApiTests(test.APITestCase):
                   "disk.write.bytes", "disk.write.requests"]
 
         api.keystone.user_list(IsA(http.HttpRequest)).AndReturn(users)
-        api.keystone.tenant_list(IsA(http.HttpRequest), admin=True)\
+        api.keystone.tenant_list(IsA(http.HttpRequest))\
             .AndReturn(tenants)
         api.ceilometer.meter_list(IsA(http.HttpRequest)).AndReturn(meters)
         api.ceilometer.statistic_list(IsA(http.HttpRequest),
