@@ -97,56 +97,22 @@ class StatsTab(tabs.Tab):
     template_name = ("admin/ceilometer/stats.html")
 
     def get_context_data(self, request):
-        context = {}
-
-        meters = []
-        meter_types = [
-            ("Compute", [
-                {"name": "cpu", "unit": "ns", "type": "cumulative"},
-                {"name": "disk.read.requests", "unit": "requests",
-                         "type": "cumulative"},
-                {"name": "disk.read.bytes", "unit": "B",
-                         "type": "cumulative"},
-                {"name": "network.incoming.bytes", "unit": "B",
-                         "type": "cumulative"},
-                {"name": "network.outgoing.bytes", "unit": "B",
-                         "type": "cumulative"},
-                {"name": "network.incoming.packets", "unit": "packets",
-                         "type": "cumulative"},
-                {"name": "network.outgoing.packets", "unit": "packets",
-                         "type": "cumulative"}]),
-            ("Network", [
-                {"name": "network.create", "unit": "network", "type": "delta"},
-                {"name": "network.update", "unit": "network", "type": "delta"},
-                {"name": "subnet.create", "unit": "subnet", "type": "delta"},
-                {"name": "subnet.update", "unit": "subnet", "type": "delta"},
-                {"name": "port.create", "unit": "port", "type": "delta"},
-                {"name": "port.update", "unit": "port", "type": "delta"},
-                {"name": "router.create", "unit": "router", "type": "delta"},
-                {"name": "router.update", "unit": "router", "type": "delta"},
-                {"name": "ip.floating.create", "unit": "ip", "type": "delta"},
-                {"name": "ip.floating.update", "unit": "ip",
-                         "type": "delta"}]),
-            ("Object Storage", [
-                {"name": "storage.objects.incoming.bytes", "unit": "B",
-                         "type": "delta"},
-                {"name": "storage.objects.outgoing.bytes", "unit": "B",
-                         "type": "delta"}])
-        ]
-
-        # grab different resources for metrics,
-        # and associate with the right type
         meters = ceilometer.meter_list(self.request)
-        resources = {}
-        for meter in meters:
-            # group resources by meter names
-            if meter.type == 'delta' or meter.type == 'cumulative':
-                if meter.name not in resources:
-                    resources[meter.name] = []
-                if meter.resource_id not in resources[meter.name]:
-                    resources[meter.name].append(meter.resource_id)
+        # Remove gauge type data.
+        meters = filter(lambda m: m.type != "gauge", meters)
 
-        context = {'meters': meter_types, 'resources': resources}
+        # Remove meters with the same name.
+        cached_meter_names = []
+        cached_meters = []
+        for m in meters:
+            if m.name not in cached_meter_names:
+                cached_meter_names.append(m.name)
+                cached_meters.append(m)
+
+        context = {
+            'meters': meters,
+            'meters_unique_names': cached_meters,
+        }
         context.update(csrf(request))
         return context
 

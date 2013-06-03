@@ -287,7 +287,7 @@ class NetworkUsageTable(tables.DataTable):
     class Meta:
         name = "global_network_usage"
         verbose_name = _("Global Network Usage")
-        table_actions=(NetworkUsageFilterAction,)
+        table_actions = (NetworkUsageFilterAction,)
         multi_select = False
 
 
@@ -309,10 +309,12 @@ class ObjectStoreUsageTable(tables.DataTable):
     resource = tables.Column("resource",
                              verbose_name=_("Resource"),
                              sortable=True)
-    storage_incoming_bytes = tables.Column(get_bytes("storage_objects_incoming_bytes"),
+    storage_incoming_bytes = tables.Column(
+                           get_bytes("storage_objects_incoming_bytes"),
                            verbose_name=_("Object Storage Incoming Bytes"),
                            summation="sum", sortable=True)
-    storage_outgoing_bytes = tables.Column(get_bytes("storage_objects_outgoing_bytes"),
+    storage_outgoing_bytes = tables.Column(
+                            get_bytes("storage_objects_outgoing_bytes"),
                             verbose_name=_("Object Storage Outgoing Bytes"),
                             summation="sum", sortable=True)
     storage_objects = tables.Column("storage_objects",
