@@ -192,7 +192,7 @@ horizon.ceilometer = {
     var targetDate;
     var self = this;
     now = new Date();
-    $("#date_to").datepicker('setValue', now);
+    self.$date_to.datepicker('setValue', now);
     targetDate = new Date();
     targetDate.setDate(now.getDate() - date_interval);
     self.$date_from.datepicker('setValue', targetDate);
@@ -226,6 +226,7 @@ horizon.ceilometer = {
       onRender: function (date) { return date.valueOf() <= from.date.valueOf() ? 'disabled' : ''; }
     }).on('changeDate', function () {
       to.hide();
+      self.loadChartData();
     }).data('datepicker');
 
     $(".action_display_chart").click(function () {
