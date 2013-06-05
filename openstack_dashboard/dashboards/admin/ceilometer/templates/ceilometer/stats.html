@@ -74,14 +74,6 @@
       </div>
       <button type="button" id="action_display_chart"
               class="btn btn-small btn-search action_display_chart">{% trans "Refresh" %}</button>
-      <button type="button" id="action_export_chart"
-              class="btn btn-small btn-search action_export_chart">{% trans "Export chart to PDF" %}</button>
     </form>
 </div>
 <div id="chart_container"></div>
-
-<form id="svgform" name="svgform" method="POST" action="{% url "horizon:admin:ceilometer:export" %}">
-  {% csrf_token %}
-  <input type="hidden" id="svgdata" name="svgdata" value=""/>
-</form>
-

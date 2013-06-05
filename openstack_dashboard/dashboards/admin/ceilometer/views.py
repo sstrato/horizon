@@ -25,9 +25,6 @@ from django.views.generic import View
 from .tabs import CeilometerOverviewTabs
 from openstack_dashboard.api import ceilometer
 
-from svglib.svglib import SvgRenderer
-from reportlab.graphics import renderPDF
-import xml.dom.minidom
 import itertools
 import operator
 
@@ -162,25 +159,5 @@ class SamplesView(View):
 
         for sample in samples:
             writer.writerow(sample)
-
-        return response
-
-
-class ExportView(View):
-    def post(self, request, *args, **kwargs):
-        data = request.POST.get('svgdata', '')
-
-        # render svg
-        doc = xml.dom.minidom.parseString(data.encode("utf-8"))
-        svg = doc.documentElement
-        svgRenderer = SvgRenderer()
-        svgRenderer.render(svg)
-        drawing = svgRenderer.finish()
-
-        # output to pdf
-        pdf = renderPDF.drawToString(drawing)
-        response = HttpResponse(mimetype='application/pdf')
-        response["Content-Disposition"] = "attachment; filename=chart.pdf"
-        response.write(pdf)
 
         return response

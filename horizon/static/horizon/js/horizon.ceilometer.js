@@ -198,15 +198,6 @@ horizon.ceilometer = {
     self.$date_from.datepicker('setValue', targetDate);
   },
 
-  submit_download_form: function () {
-    var self = this;
-    var svg = self.$chart_container.find("svg");
-    if (svg.length >= 1) {
-      var svg_xml = (new XMLSerializer).serializeToString(svg[0]);
-      $("#svgdata").val(svg_xml);
-      $("#svgform").submit();
-    }
-  },
   init: function () {
     var self = this,
       to,
@@ -239,10 +230,6 @@ horizon.ceilometer = {
     });
     self.$resource.change(function () {
       self.loadChartData();
-    });
-
-    $("#action_export_chart").click(function () {
-      self.submit_download_form();
     });
 
     $("#date_options").change(function () {
