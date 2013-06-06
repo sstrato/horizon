@@ -51,6 +51,12 @@ class NetworkTrafficUsageTab(tabs.TableTab):
                         key=operator.itemgetter('tenant', 'user'))
         return result
 
+    def allowed(self, request):
+        # The traffic info is provided by nova-network right now.
+        # If quantum is enabled nova-network should be disabled.
+        permissions = ("openstack.services.network",)
+        return not request.user.has_perms(set(permissions))
+
 
 class NetworkUsageTab(tabs.TableTab):
     table_classes = (NetworkUsageTable,)
@@ -63,6 +69,10 @@ class NetworkUsageTab(tabs.TableTab):
         result = sorted(ceilometer.global_network_usage(request),
                         key=operator.itemgetter('tenant', 'user'))
         return result
+
+    def allowed(self, request):
+        permissions = ("openstack.services.network",)
+        return request.user.has_perms(set(permissions))
 
 
 class CpuUsageTab(tabs.TableTab):
@@ -89,6 +99,10 @@ class GlobalObjectStoreUsageTab(tabs.TableTab):
         result = sorted(ceilometer.global_object_store_usage(request),
                         key=operator.itemgetter('tenant', 'user'))
         return result
+
+    def allowed(self, request):
+        permissions = ("openstack.services.object-store",)
+        return request.user.has_perms(set(permissions))
 
 
 class StatsTab(tabs.Tab):
