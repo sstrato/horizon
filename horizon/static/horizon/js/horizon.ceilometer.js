@@ -111,24 +111,10 @@ horizon.ceilometer = {
 
           }
 
-          if (current_type === "cumulative") {
-            self.svg.append("g")
-              .attr("class", "x axis")
-              .attr("transform", "translate(0," + self.height + ")")
-              .call(self.xAxis);
-          } else {
-            // show in m/d/Y hh:mm:ss format
-            self.svg.append("g")
-              .attr("class", "x axis")
-              .attr("transform", "translate(0," + self.height + ")")
-              .call(self.xAxis.tickFormat(d3.time.format("%m-%d %H:%M:%S")))
-              .selectAll("text")
-              .style("text-anchor", "end")
-              .attr("dx", "-.8em")
-              .attr("dy", ".15em")
-              .attr("transform", "rotate(-65)");
-          }
-
+          self.svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + self.height + ")")
+            .call(self.xAxis);
           self.svg.append("g")
             .attr("class", "y axis")
             .call(self.yAxis)
@@ -139,32 +125,13 @@ horizon.ceilometer = {
             .style("text-anchor", "end")
             .text(meter_text);
 
-          // draw line or bar depending on type
-          if (current_type === "cumulative") {
-            self.svg.append("path")
-              .datum(data)
-              .attr("class", "line")
-              .style("stroke", "steelblue")
-              .style("stroke-width", 1.5)
-              .style("fill", "none")
-              .attr("d", self.line);
-          } else {
-            self.svg.selectAll(".bar")
-              .data(data)
-              .enter().append("rect")
-              .attr("class", "bar")
-              .attr("width", 5)
-              .style("fill", "steelblue")
-              .attr("x", function (d) {
-                return self.x(d.date);
-              })
-              .attr("y", function (d) {
-                return self.y(d.value);
-              })
-              .attr("height", function (d) {
-                return self.height - self.y(d.value);
-              });
-          }
+          self.svg.append("path")
+            .datum(data)
+            .attr("class", "line")
+            .style("stroke", "steelblue")
+            .style("stroke-width", 1.5)
+            .style("fill", "none")
+            .attr("d", self.line);
 
           self.svg.append("text")
             .attr("x", (self.width / 2))

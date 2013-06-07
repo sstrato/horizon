@@ -110,46 +110,27 @@ class SamplesView(View):
             query.append({'field': 'timestamp', 'op': 'le', 'value': date_to})
 
         samples = []
-        meter_type = ""
         if source and resource:
             query.append({'field': 'resource', 'op': 'eq', 'value': resource})
             sample_list = ceilometer.sample_list(self.request, source, query)
 
-            previous = self._get_previous_val(source, resource, date_from)
-
             for sample_data in sample_list:
-                current_volume = sample_data.counter_volume
-
-                # if sample is cumulative, substract previous val
-                meter_type = sample_data.counter_type
-                if sample_data.counter_type == "cumulative":
-                    current_delta = current_volume - previous
-                    previous = current_volume
-                    if current_delta < 0:
-                        current_delta = current_volume
-                else:
-                    current_delta = current_volume
-                samples.append([sample_data.timestamp[:19], current_delta])
+                samples.append([sample_data.timestamp[:19], sample_data.counter_volume])
 
             # if requested period is too long,
             # interpolate data, for cumulative metrics
-            if meter_type == "cumulative":
-                date_start_obj = datetime.strptime(date_from,
-                                                   "%Y-%m-%d %H:%M:%S")
-                date_end_obj = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
-                delta = (date_end_obj - date_start_obj).days
+            date_start_obj = datetime.strptime(date_from,
+                                               "%Y-%m-%d %H:%M:%S")
+            date_end_obj = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
+            delta = (date_end_obj - date_start_obj).days
 
-                if delta >= 365:
-                    samples = map(to_days, samples)
-                    samples = reduce_metrics(samples)
-                elif delta >= 30:
-                    # reduce metrics to hours
-                    samples = map(to_hours, samples)
-                    samples = reduce_metrics(samples)
-            else:
-                # add measures of 0 for start and end
-                samples.append([date_from.replace(" ", "T"), 0])
-                samples.append([date_to.replace(" ", "T"), 0])
+            if delta >= 365:
+                samples = map(to_days, samples)
+                samples = reduce_metrics(samples)
+            elif delta >= 30:
+                # reduce metrics to hours
+                samples = map(to_hours, samples)
+                samples = reduce_metrics(samples)
 
         # output csv
         headers = ['date', 'value']

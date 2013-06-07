@@ -113,7 +113,7 @@ class StatsTab(tabs.Tab):
     def get_context_data(self, request):
         meters = ceilometer.meter_list(self.request)
         # Remove gauge type data.
-        meters = filter(lambda m: m.type != "gauge", meters)
+        meters = filter(lambda m: m.type == "cumulative", meters)
 
         # Remove meters with the same name.
         cached_meter_names = []
