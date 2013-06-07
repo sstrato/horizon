@@ -99,9 +99,17 @@ horizon.ceilometer = {
           self.x.domain(d3.extent(data, function (d) {
             return d.date;
           }));
-          self.y.domain(d3.extent(data, function (d) {
-            return d.value;
-          }));
+
+          var min_value = d3.min(data, function(d){return d.value});
+          var max_value = d3.max(data, function(d){return d.value});
+          if (min_value === max_value) {
+            self.y.domain([0, min_value * 2]);
+          } else {
+            self.y.domain(d3.extent(data, function (d) {
+              return d.value;
+            }));
+
+          }
 
           if (current_type === "cumulative") {
             self.svg.append("g")
