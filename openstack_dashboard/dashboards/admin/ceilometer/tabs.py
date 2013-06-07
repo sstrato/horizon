@@ -23,7 +23,7 @@ from horizon import tabs
 from openstack_dashboard.api import ceilometer
 
 from .tables import (DiskUsageTable, NetworkTrafficUsageTable,
-                     CpuUsageTable, ObjectStoreUsageTable, NetworkUsageTable)
+                     ObjectStoreUsageTable, NetworkUsageTable)
 
 
 class DiskUsageTab(tabs.TableTab):
@@ -67,19 +67,6 @@ class NetworkUsageTab(tabs.TableTab):
     def allowed(self, request):
         permissions = ("openstack.services.network",)
         return request.user.has_perms(set(permissions))
-
-
-class CpuUsageTab(tabs.TableTab):
-    table_classes = (CpuUsageTable,)
-    name = _("Global CPU Usage")
-    slug = "global_cpu_usage"
-    template_name = ("horizon/common/_detail_table.html")
-
-    def get_global_cpu_usage_data(self):
-        request = self.tab_group.request
-        result = sorted(ceilometer.global_cpu_usage(request),
-                        key=operator.itemgetter('tenant', 'user'))
-        return result
 
 
 class GlobalObjectStoreUsageTab(tabs.TableTab):
@@ -128,5 +115,5 @@ class StatsTab(tabs.Tab):
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
     tabs = (DiskUsageTab, NetworkTrafficUsageTab, NetworkUsageTab,
-            GlobalObjectStoreUsageTab, CpuUsageTab, StatsTab,)
+            GlobalObjectStoreUsageTab, StatsTab,)
     sticky = True

@@ -169,18 +169,6 @@ class DiskUsageTable(tables.DataTable):
         template = "admin/ceilometer/table_with_date_selectors.html"
 
 
-class CpuUsageFilterAction(tables.FilterAction):
-    def filter(self, table, tenants, filter_string):
-        q = filter_string.lower()
-
-        def comp(tenant):
-            if q in tenant.name.lower():
-                return True
-            return False
-
-        return filter(comp, tenants)
-
-
 class NetworkTrafficUsageFilterAction(tables.FilterAction):
     def filter(self, table, tenants, filter_string):
         q = filter_string.lower()
@@ -333,32 +321,4 @@ class ObjectStoreUsageTable(tables.DataTable):
         name = "global_object_store_usage"
         verbose_name = _("Global Object Store Usage")
         table_actions = (ObjectStoreUsageFilterAction,)
-        multi_select = False
-
-
-def get_cpu_time(sample):
-    cpu_seconds = sample.cpu / 1000000000
-    formatted_time = "%02d:%02d:%02d" % \
-        reduce(lambda a, b: divmod(a[0], b) + a[1:], [(cpu_seconds,), 60, 60])
-    return StringWithPlusOperationForTime(formatted_time)
-
-
-class CpuUsageTable(tables.DataTable):
-    tenant = tables.Column("tenant", verbose_name=_("Tenant"))
-    user = tables.Column("user", verbose_name=_("User"), sortable=True)
-    instance = tables.Column("resource",
-                             verbose_name=_("Resource"),
-                             sortable=True)
-    cpu = tables.Column(get_cpu_time,
-                        verbose_name=_("CPU time"),
-                        summation="sum",
-                        sortable=True)
-
-    def get_object_id(self, datum):
-        return datum.tenant + datum.user + datum.resource
-
-    class Meta:
-        name = "global_cpu_usage"
-        verbose_name = _("Global CPU Usage")
-        table_actions = (CpuUsageFilterAction,)
         multi_select = False
