@@ -40,14 +40,14 @@ class IndexView(tabs.TabbedTableView):
 def to_hours(item):
     date_obj = datetime.strptime(item[0], '%Y-%m-%dT%H:%M:%S')
     new_date_str = date_obj.strftime("%Y-%m-%dT%H:00:00")
-    return (new_date_str, item[1])
+    return new_date_str, item[1]
 
 
 # convert all items in list to day level
 def to_days(item):
     date_obj = datetime.strptime(item[0], '%Y-%m-%dT%H:%M:%S')
     new_date_str = date_obj.strftime("%Y-%m-%dT00:00:00")
-    return (new_date_str, item[1])
+    return new_date_str, item[1]
 
 
 # given a set of metrics with same key, group them and calc average
@@ -68,64 +68,63 @@ def reduce_metrics(samples):
 
 
 class SamplesView(View):
-    # grab the latest sample value before that date
-    def _get_previous_val(self, source, resource, limit_date):
-        # give 1 hour of margin to grab latest sample
-        date_object = datetime.strptime(limit_date, '%Y-%m-%d %H:%M:%S')
-        edge_date = date_object - timedelta(hours=1)
-        edge_date_str = edge_date.strftime('%Y-%m-%d %H:%M:%S')
-
-        query = [
-            {'field': 'timestamp', 'op': 'ge', 'value': edge_date_str},
-            {'field': 'timestamp', 'op': 'lt', 'value': limit_date},
-            {'field': 'resource', 'op': 'eq', 'value': resource}
-        ]
-        sample_list = ceilometer.sample_list(self.request, source, query)
-        if len(sample_list) > 0:
-            # grab latest item
-            last = sample_list[-1]
-            return last.counter_volume
-        else:
-            return 0
-
     def get(self, request, *args, **kwargs):
-        source = request.GET.get('sample', '')
-        date_from = request.GET.get('from', '')
-        date_to = request.GET.get('to', '')
-        resource = request.GET.get('resource', '')
+        source = request.GET.get('sample', None)
+        date_from = request.GET.get('from', None)
+        date_to = request.GET.get('to', None)
+        resource = request.GET.get('resource', None)
         query = []
 
         if date_from:
             date_from += " 00:00:00"
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d %H:%M:%S")
+            # Get the data ahead of the date_from timestamp.
+            # Cumulative data like cpu is always increasing which
+            # means that the later one should minus the previous one to
+            # get correct delta value.
+            # The timedelta is the interval for ceilometer to collect data.
+            previous_time_obj = date_from_obj - timedelta(minutes=10)
             query.append({'field': 'timestamp', 'op': 'ge',
-                          'value': date_from})
+                          'value': previous_time_obj})
 
         if date_to:
             date_to += " 23:59:59"
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
             query.append({'field': 'timestamp', 'op': 'le', 'value': date_to})
 
         samples = []
         if source and resource:
             query.append({'field': 'resource', 'op': 'eq', 'value': resource})
             sample_list = ceilometer.sample_list(self.request, source, query)
+            previous = 0
+            if sample_list:
+                first_time_obj = datetime.strptime(sample_list[0].timestamp[:19], '%Y-%m-%dT%H:%M:%S')
+                if first_time_obj >= date_from_obj:
+                    # No data exists ahead of the from timestamp.
+                    previous = 0
+                else:
+                    # The first data is a previous one not in the query period.
+                    previous = sample_list[0].counter_volume
+                    sample_list.pop(0)
 
             for sample_data in sample_list:
-                samples.append([sample_data.timestamp[:19], sample_data.counter_volume])
+                current_volume = sample_data.counter_volume
+                current_delta = current_volume - previous
+                previous = current_volume
+                if current_delta < 0:
+                    current_delta = current_volume
+                samples.append([sample_data.timestamp[:19], current_delta])
 
-            # if requested period is too long,
-            # interpolate data, for cumulative metrics
-            date_start_obj = datetime.strptime(date_from,
-                                               "%Y-%m-%d %H:%M:%S")
-            date_end_obj = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
-            delta = (date_end_obj - date_start_obj).days
+        # if requested period is too long interpolate data
+        delta = (date_to_obj - date_from_obj).days
 
-            if delta >= 365:
-                samples = map(to_days, samples)
-                samples = reduce_metrics(samples)
-            elif delta >= 30:
-                # reduce metrics to hours
-                samples = map(to_hours, samples)
-                samples = reduce_metrics(samples)
+        if delta >= 365:
+            samples = map(to_days, samples)
+            samples = reduce_metrics(samples)
+        elif delta >= 30:
+            # reduce metrics to hours
+            samples = map(to_hours, samples)
+            samples = reduce_metrics(samples)
 
         # output csv
         headers = ['date', 'value']
