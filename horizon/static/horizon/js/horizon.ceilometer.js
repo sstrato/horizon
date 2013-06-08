@@ -178,7 +178,7 @@ horizon.ceilometer = {
       to,
       from;
     self.initVariables();
-    from = self.$date_from.datepicker()
+    from = self.$date_from.datepicker({format: "yyyy-mm-dd"})
       .on('changeDate', function (ev) {
         if (ev.date.valueOf() > to.date.valueOf()) {
           var newDate = new Date(ev.date);
@@ -189,6 +189,7 @@ horizon.ceilometer = {
         self.$date_to[0].focus();
       }).data('datepicker');
     to = self.$date_to.datepicker({
+      format: "yyyy-mm-dd",
       onRender: function (date) { return date.valueOf() <= from.date.valueOf() ? 'disabled' : ''; }
     }).on('changeDate', function () {
       to.hide();

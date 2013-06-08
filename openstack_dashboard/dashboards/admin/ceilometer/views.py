@@ -68,11 +68,6 @@ def reduce_metrics(samples):
 
 
 class SamplesView(View):
-    # converts string to date
-    def _to_iso_time(self, date_str):
-        date_object = datetime.strptime(date_str, '%m/%d/%Y %H:%M:%S')
-        return date_object.isoformat(' ')
-
     # grab the latest sample value before that date
     def _get_previous_val(self, source, resource, limit_date):
         # give 1 hour of margin to grab latest sample
@@ -101,12 +96,12 @@ class SamplesView(View):
         query = []
 
         if date_from:
-            date_from = self._to_iso_time(date_from + ' 00:00:00')
+            date_from += " 00:00:00"
             query.append({'field': 'timestamp', 'op': 'ge',
                           'value': date_from})
 
         if date_to:
-            date_to = self._to_iso_time(date_to + " 23:59:59")
+            date_to += " 23:59:59"
             query.append({'field': 'timestamp', 'op': 'le', 'value': date_to})
 
         samples = []
