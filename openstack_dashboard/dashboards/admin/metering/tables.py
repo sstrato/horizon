@@ -115,7 +115,12 @@ class StringWithPlusOperationForTime(str):
         return str(converted)
 
 
-class DiskUsageFilterAction(tables.FilterAction):
+class CommonFilterAction(tables.FilterAction):
+    """
+    Since server-side filter action is disabled and
+    client-side filter is superior, this class is just
+    a common class to enable client-side js filter action.
+    """
     def filter(self, table, tenants, filter_string):
         q = filter_string.lower()
 
@@ -164,20 +169,8 @@ class DiskUsageTable(tables.DataTable):
     class Meta:
         name = "global_disk_usage"
         verbose_name = _("Global Disk Usage")
-        table_actions = (DiskUsageFilterAction,)
+        table_actions = (CommonFilterAction,)
         multi_select = False
-
-
-class NetworkTrafficUsageFilterAction(tables.FilterAction):
-    def filter(self, table, tenants, filter_string):
-        q = filter_string.lower()
-
-        def comp(tenant):
-            if q in tenant.name.lower():
-                return True
-            return False
-
-        return filter(comp, tenants)
 
 
 class NetworkTrafficUsageTable(tables.DataTable):
@@ -206,20 +199,8 @@ class NetworkTrafficUsageTable(tables.DataTable):
     class Meta:
         name = "global_network_traffic_usage"
         verbose_name = _("Global Network Traffic Usage")
-        table_actions = (NetworkTrafficUsageFilterAction,)
+        table_actions = (CommonFilterAction,)
         multi_select = False
-
-
-class NetworkUsageFilterAction(tables.FilterAction):
-    def filter(self, table, tenants, filter_string):
-        q = filter_string.lower()
-
-        def comp(tenant):
-            if q in tenant.name.lower():
-                return True
-            return False
-
-        return filter(comp, tenants)
 
 
 class NetworkUsageTable(tables.DataTable):
@@ -274,20 +255,8 @@ class NetworkUsageTable(tables.DataTable):
     class Meta:
         name = "global_network_usage"
         verbose_name = _("Global Network Usage")
-        table_actions = (NetworkUsageFilterAction,)
+        table_actions = (CommonFilterAction,)
         multi_select = False
-
-
-class ObjectStoreUsageFilterAction(tables.FilterAction):
-    def filter(self, table, tenants, filter_string):
-        q = filter_string.lower()
-
-        def comp(tenant):
-            if q in tenant.name.lower():
-                return True
-            return False
-
-        return filter(comp, tenants)
 
 
 class ObjectStoreUsageTable(tables.DataTable):
@@ -319,5 +288,5 @@ class ObjectStoreUsageTable(tables.DataTable):
     class Meta:
         name = "global_object_store_usage"
         verbose_name = _("Global Object Store Usage")
-        table_actions = (ObjectStoreUsageFilterAction,)
+        table_actions = (CommonFilterAction,)
         multi_select = False

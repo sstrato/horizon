@@ -16,17 +16,18 @@
 
 import logging
 import csv
+import itertools
+import operator
+
 from datetime import datetime, timedelta
 
-from horizon import tabs
 from django.http import HttpResponse
 from django.views.generic import View
 
-from .tabs import CeilometerOverviewTabs
+from horizon import tabs
 from openstack_dashboard.api import ceilometer
+from .tabs import CeilometerOverviewTabs
 
-import itertools
-import operator
 
 LOG = logging.getLogger(__name__)
 

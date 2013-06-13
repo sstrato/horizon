@@ -1,40 +1,42 @@
 {% load i18n %}
 {% load url from future %}
 {% spaceless %}
-<script type="text/javascript">
-  addHorizonLoadEvent(
-      function () {
-        if(!horizon.ceilometer){
-          console.log("ceilometer module not found!")
-        } else {
-          var meters = [];
-          {% for m in meters %}
-            meters.push({
-              "name":  "{{ m.name }}",
-              "resource_id": "{{ m.resource_id }}",
-              "user_id": "{{ m.user_id }}",
-              "project_id": "{{ m.project_id }}",
-              "unit": "{{ m.unit }}",
-              "type": "{{ m.type }}"
-            });
-          {% endfor %}
-          horizon.ceilometer.getResources(meters);
-          horizon.ceilometer.updateResourceOptions();
-          horizon.ceilometer.loadChartData();
-        }
-      });
-</script>
+  <script type="text/javascript">
+    (function(){
+      var init_ceilometer = function(){
+        var meters = [];
+        {% for m in meters %}
+          meters.push({
+            "name":  "{{ m.name }}",
+            "resource_id": "{{ m.resource_id }}",
+            "user_id": "{{ m.user_id }}",
+            "project_id": "{{ m.project_id }}",
+            "unit": "{{ m.unit }}",
+            "type": "{{ m.type }}"
+          });
+        {% endfor %}
+        horizon.ceilometer.getResources(meters);
+        horizon.ceilometer.updateResourceOptions();
+        horizon.ceilometer.loadChartData();
+      };
+      if (typeof horizon.ceilometer !== "undefined"){
+        init_ceilometer();
+      } else {
+        addHorizonLoadEvent(init_ceilometer);
+      }
+    }());
+  </script>
 {% endspaceless %}
 <div id="samples_url" url="{% url "horizon:admin:metering:samples" %}"></div>
 <div id="ceilometer-stats">
-    <form class="form-horizontal">
-      <div class="control-group">
-        <label for="meter" class="control-label">{% trans "Metric" %}:&nbsp;</label>
-        <div class="controls">
-          <select name="meter" id="meter" class="span2 example">
-            {% for meter in meters_unique_names %}
-              <option value="{{ meter.name }}" data-unit="{{ meter.unit }}" data-type="{{ meter.type }}">
-                {{ meter.name }}
+  <form class="form-horizontal">
+    <div class="control-group">
+      <label for="meter" class="control-label">{% trans "Metric" %}:&nbsp;</label>
+      <div class="controls">
+        <select name="meter" id="meter" class="span2 example">
+          {% for meter in meters_unique_names %}
+            <option value="{{ meter.name }}" data-unit="{{ meter.unit }}" data-type="{{ meter.type }}">
+              {{ meter.name }}
               </option>
             {% endfor %}
           </select>

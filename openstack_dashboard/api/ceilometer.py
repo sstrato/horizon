@@ -20,9 +20,9 @@ import urlparse
 from django.conf import settings
 from ceilometerclient import client as ceilometer_client
 
+import keystone
 from .base import APIResourceWrapper, APIDictWrapper, url_for
 
-import keystone
 
 LOG = logging.getLogger(__name__)
 
@@ -232,7 +232,7 @@ def _group_usage(usage_list, fields=[]):
         if key not in result:
             result[key] = s
         # Make sure each object contains the fields that may not
-        # be achived from ceilometer.
+        # be archived from ceilometer.
         for f in fields:
             result[key].setdefault(f, 0)
         result[key].update({s['counter_name']: s['total']})
