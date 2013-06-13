@@ -14,17 +14,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from django.utils.translation import ugettext_lazy as _
+from django.conf.urls import patterns, url
 
-import horizon
-
-from openstack_dashboard.dashboards.admin import dashboard
+from .views import IndexView, SamplesView
 
 
-class Ceilometer(horizon.Panel):
-    name = _("Resources usage")
-    slug = 'ceilometer'
-    permissions = ('openstack.services.metering',)
-
-
-dashboard.Admin.register(Ceilometer)
+urlpatterns = patterns('openstack_dashboard.dashboards.admin.metering.views',
+    url(r'^$', IndexView.as_view(), name='index'),
+    url(r'^samples$', SamplesView.as_view(), name='samples'))

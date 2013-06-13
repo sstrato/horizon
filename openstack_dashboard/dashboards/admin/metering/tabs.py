@@ -66,7 +66,7 @@ class NetworkUsageTab(tabs.TableTab):
 
     def allowed(self, request):
         permissions = ("openstack.services.network",)
-        return request.user.has_perms(set(permissions))
+        return request.user.has_perms(permissions)
 
 
 class GlobalObjectStoreUsageTab(tabs.TableTab):
@@ -83,13 +83,13 @@ class GlobalObjectStoreUsageTab(tabs.TableTab):
 
     def allowed(self, request):
         permissions = ("openstack.services.object-store",)
-        return request.user.has_perms(set(permissions))
+        return request.user.has_perms(permissions)
 
 
 class StatsTab(tabs.Tab):
     name = _("Stats")
     slug = "stats"
-    template_name = ("admin/ceilometer/stats.html")
+    template_name = ("admin/metering/stats.html")
 
     def get_context_data(self, request):
         meters = ceilometer.meter_list(self.request)

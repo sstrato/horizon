@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 
 class IndexView(tabs.TabbedTableView):
     tab_group_class = CeilometerOverviewTabs
-    template_name = 'admin/ceilometer/index.html'
+    template_name = 'admin/metering/index.html'
 
 
 # convert all items in list to hour level
