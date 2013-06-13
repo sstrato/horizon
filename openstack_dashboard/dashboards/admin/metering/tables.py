@@ -1,4 +1,3 @@
-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Canonical Ltd.
@@ -28,7 +27,13 @@ LOG = logging.getLogger(__name__)
 
 
 class StringWithPlusOperation(str):
-    """Override "+" operation for string object to make."""
+    """
+    Override "+" operation for string object.
+    It's used to get summary of numbers(string format) in usage tables.
+    eg: "600 KB" + "600 KB" = "1.1 MB".
+    The plus operation is done by `sum` function with
+    column property `summation` set tu 'sum'.
+    """
     def __init__(self, *args, **kwargs):
         super(StringWithPlusOperation, self).__init__(*args, **kwargs)
 
@@ -48,19 +53,19 @@ class StringWithPlusOperation(str):
     # given a number and units, convert that to bytes
     def to_bytes(self, number, unit):
         if unit == "PB":
-            bytes = number * (1024 * 1024 * 1024 * 1024 * 1024)
+            result_bytes = number * (1024 * 1024 * 1024 * 1024 * 1024)
         elif unit == "TB":
-            bytes = number * (1024 * 1024 * 1024 * 1024)
+            result_bytes = number * (1024 * 1024 * 1024 * 1024)
         elif unit == "GB":
-            bytes = number * (1024 * 1024 * 1024)
+            result_bytes = number * (1024 * 1024 * 1024)
         elif unit == "MB":
-            bytes = number * (1024 * 1024)
+            result_bytes = number * (1024 * 1024)
         elif unit == "KB":
-            bytes = number * (1024)
+            result_bytes = number * (1024)
         else:
-            bytes = number
+            result_bytes = number
 
-        return bytes
+        return result_bytes
 
     def __radd__(self, another):
         num_x, unit_x = self._split_str(self)
@@ -90,29 +95,6 @@ class StringWithPlusOperation(str):
             total = converted_num_x + converted_num_y
             result = filesizeformat(total, float_format)
             return result
-
-
-class StringWithPlusOperationForTime(str):
-    """Override "+" operation for string object to make."""
-    def __init__(self, *args, **kwargs):
-        super(StringWithPlusOperationForTime, self).__init__(*args, **kwargs)
-
-    def __radd__(self, another):
-        # convert to seconds, add them and convert again
-        seconds1 = sum(int(x) * 60 ** i for i, x
-                        in enumerate(reversed(self.split(":"))))
-        if isinstance(another, (int, float)):
-            seconds2 = another
-        else:
-            seconds2 = sum(int(x) * 60 ** i for i, x
-                        in enumerate(reversed(another.split(":"))))
-
-        total_time = seconds1 + seconds2
-        converted = "%02d:%02d:%02d" % \
-            reduce(lambda a, b: divmod(a[0], b) + a[1:],
-                   [(total_time,), 60, 60])
-
-        return str(converted)
 
 
 class CommonFilterAction(tables.FilterAction):
