@@ -23,7 +23,7 @@ from openstack_dashboard.dashboards.admin import dashboard
 class Metering(horizon.Panel):
     name = _("Resource Usage")
     slug = 'metering'
-    permissions = ('openstack.services.metering',)
+    permissions = ('openstack.services.metering', 'openstack.roles.admin', )
 
 
 dashboard.Admin.register(Metering)

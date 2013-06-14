@@ -43,6 +43,7 @@ from openstack_dashboard.api import network
 from openstack_dashboard.api import nova
 from openstack_dashboard.api import quantum
 from openstack_dashboard.api import swift
+from openstack_dashboard.api import ceilometer
 
 assert base
 assert cinder
@@ -54,3 +55,4 @@ assert nova
 assert quantum
 assert lbaas
 assert swift
+assert ceilometer

@@ -19,6 +19,9 @@ from ceilometerclient.v2.resources import Resource, ResourceManager
 from ceilometerclient.v2.statistics import Statistics, StatisticsManager
 from ceilometerclient.v2.samples import Sample, SampleManager
 
+from openstack_dashboard.api.ceilometer import (GlobalDiskUsage,
+  GlobalNetworkTrafficUsage, GlobalNetworkUsage, GlobalObjectStoreUsage)
+
 from .utils import TestDataContainer
 
 
@@ -29,6 +32,8 @@ def data(TEST):
     TEST.statistics = TestDataContainer()
     TEST.global_disk_usages = TestDataContainer()
     TEST.global_network_usages = TestDataContainer()
+    TEST.global_network_traffic_usages = TestDataContainer()
+    TEST.global_object_store_usages = TestDataContainer()
 
     # global disk usage
     global_disk_usage_1 = dict(
@@ -47,11 +52,11 @@ def data(TEST):
         disk_write_bytes="disk_write_bytes2",
         disk_read_requests="disk_read_requests2",
         disk_write_requests="disk_write_requests2",)
-    TEST.global_disk_usages.add(global_disk_usage_1)
-    TEST.global_disk_usages.add(global_disk_usage_2)
+    TEST.global_disk_usages.add(GlobalDiskUsage(global_disk_usage_1))
+    TEST.global_disk_usages.add(GlobalDiskUsage(global_disk_usage_2))
 
-    # global network usage
-    global_network_usage_1 = dict(
+    # global network traffic usage
+    global_network_traffic_usage_1 = dict(
         tenant="tenant_1",
         user="user1",
         resource="resource1",
@@ -59,7 +64,7 @@ def data(TEST):
         network_incoming_packets="network_incoming_packets1",
         network_outgoing_bytes="network_outgoing_bytes1",
         network_outgoing_packets="network_outgoing_packets1",)
-    global_network_usage_2 = dict(
+    global_network_traffic_usage_2 = dict(
         tenant="tenant_2",
         user="user2",
         resource="resource2",
@@ -67,8 +72,64 @@ def data(TEST):
         network_incoming_packets="network_incoming_packets2",
         network_outgoing_bytes="network_outgoing_bytes2",
         network_outgoing_packets="network_outgoing_packets2",)
-    TEST.global_network_usages.add(global_network_usage_1)
-    TEST.global_network_usages.add(global_network_usage_2)
+    TEST.global_network_traffic_usages\
+        .add(GlobalNetworkTrafficUsage(global_network_traffic_usage_1))
+    TEST.global_network_traffic_usages\
+        .add(GlobalNetworkTrafficUsage(global_network_traffic_usage_2))
+
+    global_network_usage_1 = dict(
+      tenant="tenant_1",
+      user="user_1",
+      resource="resource_id_1",
+      network=2,
+      network_create=2,
+      subnet=2,
+      subnet_create=2,
+      port=2,
+      port_create=2,
+      router=2,
+      router_create=2,
+      ip_floating=2,
+      ip_floating_create=2)
+    global_network_usage_2 = dict(
+      tenant="tenant_2",
+      user="user_2",
+      resource="resource_id_2",
+      network=2,
+      network_create=2,
+      subnet=2,
+      subnet_create=2,
+      port=2,
+      port_create=2,
+      router=2,
+      router_create=2,
+      ip_floating=2,
+      ip_floating_create=2)
+    TEST.global_network_usages.add(GlobalNetworkUsage(global_network_usage_1))
+    TEST.global_network_usages.add(GlobalNetworkUsage(global_network_usage_2))
+
+    global_object_store_usage_1 = dict(
+      tenant="tenant_1",
+      user="user_1",
+      resource="resource_id_1",
+      storage_objects=1,
+      storage_objects_size=1,
+      storage_objects_outgoing_bytes=1,
+      storage_objects_incoming_bytes=1
+    )
+    global_object_store_usage_2 = dict(
+      tenant="tenant_2",
+      user="user_2",
+      resource="resource_id_2",
+      storage_objects=2,
+      storage_objects_size=2,
+      storage_objects_outgoing_bytes=2,
+      storage_objects_incoming_bytes=2
+    )
+    TEST.global_object_store_usages\
+      .add(GlobalObjectStoreUsage(global_object_store_usage_1))
+    TEST.global_object_store_usages\
+      .add(GlobalObjectStoreUsage(global_object_store_usage_2))
 
     # resources
     resource_dict_1 = dict(

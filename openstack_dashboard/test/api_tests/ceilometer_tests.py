@@ -142,7 +142,7 @@ class CeilometerApiTests(test.APITestCase):
 
         api.keystone.user_list(IsA(http.HttpRequest)).AndReturn(users)
         api.keystone.tenant_list(IsA(http.HttpRequest))\
-            .AndReturn(tenants)
+            .AndReturn((tenants, False))
         api.ceilometer.meter_list(IsA(http.HttpRequest)).AndReturn(meters)
         api.ceilometer.statistic_list(IsA(http.HttpRequest),
             IsA(str), query=IsA(list)).MultipleTimes("1").AndReturn(statistics)
