@@ -14,13 +14,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ceilometerclient.v2.meters import Meter, MeterManager
-from ceilometerclient.v2.resources import Resource, ResourceManager
-from ceilometerclient.v2.statistics import Statistics, StatisticsManager
-from ceilometerclient.v2.samples import Sample, SampleManager
+from ceilometerclient.v2.meters import Meter
+from ceilometerclient.v2.meters import MeterManager
+from ceilometerclient.v2.resources import Resource
+from ceilometerclient.v2.resources import ResourceManager
+from ceilometerclient.v2.statistics import Statistics
+from ceilometerclient.v2.statistics import StatisticsManager
+from ceilometerclient.v2.samples import Sample
+from ceilometerclient.v2.samples import SampleManager
 
-from openstack_dashboard.api.ceilometer import (GlobalDiskUsage,
-  GlobalNetworkTrafficUsage, GlobalNetworkUsage, GlobalObjectStoreUsage)
+from openstack_dashboard.api.ceilometer import GlobalDiskUsage
+from openstack_dashboard.api.ceilometer import GlobalNetworkTrafficUsage
+from openstack_dashboard.api.ceilometer import GlobalNetworkUsage
+from openstack_dashboard.api.ceilometer import GlobalObjectStoreUsage
 
 from .utils import TestDataContainer
 

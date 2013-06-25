@@ -1,0 +1,5 @@
+date,value
+{% spaceless %}
+{% for sample in samples %}{{ sample.0 }},{{ sample.1 }}
+{% endfor %}
+{% endspaceless %}

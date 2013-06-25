@@ -58,7 +58,7 @@ horizon.ceilometer = {
 
   loadChartData: function () {
     var self = this,
-      sample = self.$meter.val(),
+      meter = self.$meter.val(),
       resource = self.$resource.val(),
       from = self.$date_from.val(),
       to = self.$date_to.val(),
@@ -71,11 +71,8 @@ horizon.ceilometer = {
       .append("g")
       .attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
 
-    // get sample, resource, from and to
-
-    if (sample && resource) {
-      var date_ts = (new Date()).getTime();
-      d3.csv(horizon_samples_url + "?ts=" + date_ts + "&sample=" + sample + "&resource=" + resource + "&from=" + from + "&to=" + to,
+    if (meter && resource) {
+      d3.csv(horizon_samples_url + "?meter=" + meter + "&resource=" + resource + "&from=" + from + "&to=" + to,
         function (error, data) {
           var chart_title = self.$meter.val() + " ";
           chart_title += gettext("for resource") + " " + self.$resource.val();

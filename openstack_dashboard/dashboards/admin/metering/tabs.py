@@ -21,8 +21,10 @@ from django.core.context_processors import csrf
 from horizon import tabs
 from openstack_dashboard.api import ceilometer
 
-from .tables import (DiskUsageTable, NetworkTrafficUsageTable,
-                     ObjectStoreUsageTable, NetworkUsageTable)
+from .tables import DiskUsageTable
+from .tables import NetworkTrafficUsageTable
+from .tables import ObjectStoreUsageTable
+from .tables import NetworkUsageTable
 
 
 class DiskUsageTab(tabs.TableTab):

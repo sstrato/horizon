@@ -20,8 +20,10 @@ import urlparse
 from django.conf import settings
 from ceilometerclient import client as ceilometer_client
 
-import keystone
-from .base import APIResourceWrapper, APIDictWrapper, url_for
+from .base import APIResourceWrapper
+from .base import APIDictWrapper
+from .base import url_for
+from openstack_dashboard.api import keystone
 
 
 LOG = logging.getLogger(__name__)
@@ -207,8 +209,9 @@ def global_usage(request, fields):
                                     query=get_query(m.user_id,
                                                     m.project_id,
                                                     m.resource_id))
-        # TODO: It seems that there's only one element in statistic list.
-        # TODO: if statistics is []
+        # TODO(yuanotes): It seems that there's only
+        # one element in statistic list. Add exception
+        # if statictics is empty.
         statistic = statistics[0]
 
         usage_list.append({"tenant": get_tenant(m.project_id),

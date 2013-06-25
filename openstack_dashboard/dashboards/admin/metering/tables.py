@@ -20,7 +20,8 @@ import re
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import tables
-from horizon.templatetags.sizeformat import filesizeformat, float_format
+from horizon.templatetags.sizeformat import filesizeformat
+from horizon.templatetags.sizeformat import float_format
 
 
 LOG = logging.getLogger(__name__)

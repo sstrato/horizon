@@ -15,17 +15,17 @@
 # under the License.
 
 import logging
-import csv
 import itertools
 import operator
+from datetime import datetime
+from datetime import timedelta
 
-from datetime import datetime, timedelta
-
-from django.http import HttpResponse
-from django.views.generic import View
+from django.views.generic import TemplateView
 
 from horizon import tabs
+from horizon import exceptions
 from openstack_dashboard.api import ceilometer
+
 from .tabs import CeilometerOverviewTabs
 
 
@@ -51,63 +51,67 @@ def to_days(item):
     return new_date_str, item[1]
 
 
-# given a set of metrics with same key, group them and calc average
+# given a set of metrics with same key, group them and calculate the average
 def reduce_metrics(samples):
     new_samples = []
     for key, items in itertools.groupby(samples, operator.itemgetter(0)):
-        grouped_items = []
-        for item in items:
-            grouped_items.append(item[1])
-        item_len = len(grouped_items)
-        if item_len > 0:
-            avg = reduce(lambda x, y: x + y, grouped_items) / item_len
+        items = list(items)
+        if len(items) > 0:
+            avg = sum(map(lambda x: x[1], items)) / len(items)
         else:
             avg = 0
-
         new_samples.append([key, avg])
     return new_samples
 
 
-class SamplesView(View):
+class SamplesView(TemplateView):
+    template_name = "admin/metering/samples.csv"
+
     def get(self, request, *args, **kwargs):
-        source = request.GET.get('sample', None)
+        meter = request.GET.get('meter', None)
         date_from = request.GET.get('from', None)
         date_to = request.GET.get('to', None)
         resource = request.GET.get('resource', None)
-        query = []
 
-        if date_from:
-            date_from += " 00:00:00"
-            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d %H:%M:%S")
+        if not(meter and date_from and date_to and resource):
+            raise exceptions.NotFound
+        else:
+            date_from += "T00:00:00"
+            date_to += "T23:59:59"
+            try:
+                date_from_obj = datetime.strptime(date_from,
+                                        "%Y-%m-%dT%H:%M:%S")
+                date_to_obj = datetime.strptime(date_to, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                raise exceptions.NotFound
+
             # Get the data ahead of the date_from timestamp.
             # Cumulative data like cpu is always increasing which
             # means that the later one should minus the previous one to
             # get correct delta value.
             # The timedelta is the interval for ceilometer to collect data.
             previous_time_obj = date_from_obj - timedelta(minutes=10)
-            query.append({'field': 'timestamp', 'op': 'ge',
-                          'value': previous_time_obj})
-
-        if date_to:
-            date_to += " 23:59:59"
-            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d %H:%M:%S")
-            query.append({'field': 'timestamp', 'op': 'le', 'value': date_to})
-
-        samples = []
-        if source and resource:
-            query.append({'field': 'resource', 'op': 'eq', 'value': resource})
-            sample_list = ceilometer.sample_list(self.request, source, query)
+            query = [{'field': 'timestamp',
+                      'op': 'ge',
+                      'value': previous_time_obj},
+                     {'field': 'timestamp',
+                      'op': 'le',
+                      'value': date_to},
+                     {'field': 'resource',
+                      'op': 'eq',
+                      'value': resource}]
+            sample_list = ceilometer.sample_list(self.request, meter, query)
             previous = 0
             if sample_list:
-                first_time_obj = datetime.strptime(sample_list[0].timestamp[:19], '%Y-%m-%dT%H:%M:%S')
-                if first_time_obj >= date_from_obj:
-                    # No data exists ahead of the from timestamp.
-                    previous = 0
-                else:
+                first_time_obj = datetime.strptime(
+                                sample_list[0].timestamp[:19],
+                                '%Y-%m-%dT%H:%M:%S')
+                if first_time_obj < date_from_obj:
                     # The first data is a previous one not in the query period.
                     previous = sample_list[0].counter_volume
                     sample_list.pop(0)
 
+            samples = []
             for sample_data in sample_list:
                 current_volume = sample_data.counter_volume
                 current_delta = current_volume - previous
@@ -116,24 +120,19 @@ class SamplesView(View):
                     current_delta = current_volume
                 samples.append([sample_data.timestamp[:19], current_delta])
 
-        # if requested period is too long interpolate data
-        delta = (date_to_obj - date_from_obj).days
+            # if requested period is too long interpolate data
+            delta = (date_to_obj - date_from_obj).days
 
-        if delta >= 365:
-            samples = map(to_days, samples)
-            samples = reduce_metrics(samples)
-        elif delta >= 30:
-            # reduce metrics to hours
-            samples = map(to_hours, samples)
-            samples = reduce_metrics(samples)
+            if delta >= 365:
+                samples = map(to_days, samples)
+                samples = reduce_metrics(samples)
+            elif delta >= 30:
+                # reduce metrics to hours
+                samples = map(to_hours, samples)
+                samples = reduce_metrics(samples)
 
-        # output csv
-        headers = ['date', 'value']
-        response = HttpResponse(mimetype='text/csv')
-        writer = csv.writer(response)
-        writer.writerow(headers)
-
-        for sample in samples:
-            writer.writerow(sample)
-
-        return response
+            context = dict(samples=samples)
+            response_kwargs = dict(mimetype='text/csv')
+            return self.render_to_response(
+                    context=context,
+                    **response_kwargs)
