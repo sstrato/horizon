@@ -37,22 +37,33 @@ class IndexView(tabs.TabbedTableView):
     template_name = 'admin/metering/index.html'
 
 
-# convert all items in list to hour level
 def to_hours(item):
+    """
+    Convert the time of a sample to hour level
+    to strip the minute and second information.
+    It's used to preprocess data before interpolation.
+    """
     date_obj = datetime.strptime(item[0], '%Y-%m-%dT%H:%M:%S')
     new_date_str = date_obj.strftime("%Y-%m-%dT%H:00:00")
     return new_date_str, item[1]
 
 
-# convert all items in list to day level
 def to_days(item):
+    """
+    Convert the time of a sample to day level
+    to strip the hour, minute and second information.
+    It's used to preprocess data before interpolation.
+    """
     date_obj = datetime.strptime(item[0], '%Y-%m-%dT%H:%M:%S')
     new_date_str = date_obj.strftime("%Y-%m-%dT00:00:00")
     return new_date_str, item[1]
 
 
-# given a set of metrics with same key, group them and calculate the average
 def reduce_metrics(samples):
+    """
+    Given a set of samples, group them by time and calculate the average
+    value for that time point.
+    """
     new_samples = []
     for key, items in itertools.groupby(samples, operator.itemgetter(0)):
         items = list(items)
