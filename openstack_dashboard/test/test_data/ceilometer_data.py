@@ -228,17 +228,5 @@ def data(TEST):
                  'period': 7200,
                  'period_start': '2012-12-21T11:00:55.000000',
                  'period_end': '2012-12-21T11:00:55.000000'}
-    statistic_dict_2 = {'min': 1,
-                 'max': 9,
-                 'avg': 4.55,
-                 'sum': 45,
-                 'count': 10,
-                 'duration_start': '2012-12-21T11:00:55.000000',
-                 'duration_end': '2012-12-21T11:00:55.000000',
-                 'period': 7200,
-                 'period_start': '2012-12-21T11:00:55.000000',
-                 'period_end': '2012-12-21T11:00:55.000000'}
     statistic_1 = Statistics(StatisticsManager(None), statistic_dict_1)
-    statistic_2 = Statistics(StatisticsManager(None), statistic_dict_2)
     TEST.statistics.add(statistic_1)
-    TEST.statistics.add(statistic_2)

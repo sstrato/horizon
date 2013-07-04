@@ -21,14 +21,14 @@ from django.core.context_processors import csrf
 from horizon import tabs
 from openstack_dashboard.api import ceilometer
 
-from .tables import DiskUsageTable
-from .tables import NetworkTrafficUsageTable
-from .tables import ObjectStoreUsageTable
-from .tables import NetworkUsageTable
+from .tables import GlobalDiskUsageTable
+from .tables import GlobalNetworkTrafficUsageTable
+from .tables import GlobalObjectStoreUsageTable
+from .tables import GlobalNetworkUsageTable
 
 
-class DiskUsageTab(tabs.TableTab):
-    table_classes = (DiskUsageTable,)
+class GlobalDiskUsageTab(tabs.TableTab):
+    table_classes = (GlobalDiskUsageTable,)
     name = _("Global Disk Usage")
     slug = "global_disk_usage"
     template_name = ("horizon/common/_detail_table.html")
@@ -40,8 +40,8 @@ class DiskUsageTab(tabs.TableTab):
         return result
 
 
-class NetworkTrafficUsageTab(tabs.TableTab):
-    table_classes = (NetworkTrafficUsageTable,)
+class GlobalNetworkTrafficUsageTab(tabs.TableTab):
+    table_classes = (GlobalNetworkTrafficUsageTable,)
     name = _("Global Network Traffic Usage")
     slug = "global_network_traffic_usage"
     template_name = ("horizon/common/_detail_table.html")
@@ -53,8 +53,8 @@ class NetworkTrafficUsageTab(tabs.TableTab):
         return result
 
 
-class NetworkUsageTab(tabs.TableTab):
-    table_classes = (NetworkUsageTable,)
+class GlobalNetworkUsageTab(tabs.TableTab):
+    table_classes = (GlobalNetworkUsageTable,)
     name = _("Global Network Usage")
     slug = "global_network_usage"
     template_name = ("horizon/common/_detail_table.html")
@@ -71,7 +71,7 @@ class NetworkUsageTab(tabs.TableTab):
 
 
 class GlobalObjectStoreUsageTab(tabs.TableTab):
-    table_classes = (ObjectStoreUsageTable,)
+    table_classes = (GlobalObjectStoreUsageTable,)
     name = _("Global Object Store Usage")
     slug = "global_object_store_usage"
     template_name = ("horizon/common/_detail_table.html")
@@ -87,7 +87,7 @@ class GlobalObjectStoreUsageTab(tabs.TableTab):
         return request.user.has_perms(permissions)
 
 
-class StatsTab(tabs.Tab):
+class GlobalStatsTab(tabs.Tab):
     name = _("Stats")
     slug = "stats"
     template_name = ("admin/metering/stats.html")
@@ -115,6 +115,6 @@ class StatsTab(tabs.Tab):
 
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
-    tabs = (DiskUsageTab, NetworkTrafficUsageTab, NetworkUsageTab,
-            GlobalObjectStoreUsageTab, StatsTab,)
+    tabs = (GlobalDiskUsageTab, GlobalNetworkTrafficUsageTab,
+            GlobalNetworkUsageTab, GlobalObjectStoreUsageTab, GlobalStatsTab,)
     sticky = True
