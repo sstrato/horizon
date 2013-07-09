@@ -43,6 +43,12 @@ how to customize it, and where other components may take over:
 * Horizon also uses a number of 3rd-party clients which log separately. The
   log level for these can still be controlled through Horizon's ``LOGGING``
   config, however behaviors may vary beyond Horizon's control.
+* For more information regarding configuring logging in Horizon, please
+  read the `Django logging`_ and the `Python logging`_
+  documentation.
+
+  .. _Django logging: https://docs.djangoproject.com/en/1.5/topics/logging
+  .. _Python logging: http://docs.python.org/2/library/logging.html
 
 .. warning::
 
